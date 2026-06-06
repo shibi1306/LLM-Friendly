@@ -195,18 +195,25 @@
   gap: 8px;
 }
 
-/* Prompt actions: Convert + Skip take full width */
+/* Prompt actions: Convert + Skip stretch to fill full card width */
 .mdit-prompt-actions {
   display: flex;
   gap: 8px;
+  width: 100%;
+}
+
+.mdit-prompt-actions .mdit-btn {
+  flex-shrink: 1;
 }
 
 .mdit-prompt-actions .mdit-primary {
   flex: 3;
+  min-width: 0;
 }
 
 .mdit-prompt-actions .mdit-secondary {
   flex: 1;
+  min-width: 0;
 }
 
 .mdit-result-actions {
@@ -227,7 +234,6 @@
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   line-height: 1;
-  flex-shrink: 0;
   letter-spacing: 0.1px;
 }
 
