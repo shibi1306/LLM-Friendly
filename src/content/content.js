@@ -22,14 +22,49 @@ const SITE_INPUT_SELECTORS = {
 const attachedInputs = new WeakSet();
 let convertedContent = null;
 let isEnabled = true;
+let currentSiteEnabled = true;
 
 async function init() {
   const settings = await getSettings();
   isEnabled = settings.enabled !== false;
   if (!isEnabled) return;
 
+  // Check if current site is enabled
+  currentSiteEnabled = await isSiteEnabled(settings);
+  if (!currentSiteEnabled) return;
+
   watchFileInputs();
   setupDragDetection();
+}
+
+async function isSiteEnabled(settings) {
+  const hostname = window.location.hostname;
+  
+  // Map hostname to site key
+  const siteMap = {
+    'chatgpt.com': 'chatgpt',
+    'chat.openai.com': 'chatgpt',
+    'claude.ai': 'claude',
+    'gemini.google.com': 'gemini',
+    'copilot.microsoft.com': 'copilot',
+    'www.bing.com': 'copilot',
+    'chat.mistral.ai': 'mistral',
+    'poe.com': 'poe',
+    'chat.deepseek.com': 'deepseek',
+    'aistudio.google.com': 'gemini',
+    'grok.com': 'grok',
+    'x.com': 'grok',
+    'huggingface.co': 'huggingface',
+    'perplexity.ai': 'perplexity',
+  };
+  
+  const siteKey = siteMap[hostname];
+  
+  // If this is a custom site (not in our preset list), it's enabled
+  if (!siteKey) return true;
+  
+  // Check if the site is enabled in settings
+  return settings.enabledSites?.[siteKey] !== false;
 }
 
 // ── File input detection ────────────────────────────────────────────
@@ -55,6 +90,7 @@ function attachListener(input) {
 }
 
 async function onFileInputChange(e) {
+  if (!isEnabled || !currentSiteEnabled) return;
   const file = e.target.files?.[0];
   if (!file || !isSupported(file.name)) return;
   showPrompt(file, e.target);
@@ -62,6 +98,7 @@ async function onFileInputChange(e) {
 
 function setupDragDetection() {
   document.addEventListener('drop', e => {
+    if (!isEnabled || !currentSiteEnabled) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !isSupported(file.name)) return;
     // Give the page its drop event first
