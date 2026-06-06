@@ -1,16 +1,16 @@
 import './options.css';
 
 const SITES = [
-  { key: 'chatgpt',     label: 'ChatGPT',      icon: '🤖' },
-  { key: 'claude',      label: 'Claude',        icon: '🧠' },
-  { key: 'gemini',      label: 'Gemini',        icon: '💎' },
-  { key: 'copilot',     label: 'Copilot',       icon: '🪟' },
-  { key: 'mistral',     label: 'Mistral',       icon: '🌊' },
-  { key: 'poe',         label: 'Poe',           icon: '📖' },
-  { key: 'deepseek',    label: 'DeepSeek',      icon: '🔍' },
-  { key: 'grok',        label: 'Grok',          icon: '⚡' },
-  { key: 'huggingface', label: 'HuggingFace',   icon: '🤗' },
-  { key: 'perplexity',  label: 'Perplexity',    icon: '🔮' },
+  { key: 'chatgpt',     label: 'ChatGPT' },
+  { key: 'claude',      label: 'Claude' },
+  { key: 'gemini',      label: 'Gemini' },
+  { key: 'copilot',     label: 'Copilot' },
+  { key: 'mistral',     label: 'Mistral' },
+  { key: 'poe',         label: 'Poe' },
+  { key: 'deepseek',    label: 'DeepSeek' },
+  { key: 'grok',        label: 'Grok' },
+  { key: 'huggingface', label: 'HuggingFace' },
+  { key: 'perplexity',  label: 'Perplexity' },
 ];
 
 let settings = {};
@@ -38,7 +38,6 @@ function renderSiteGrid() {
   const grid = document.getElementById('siteGrid');
   grid.innerHTML = SITES.map(site => `
     <label class="site-card" id="site-${site.key}">
-      <span class="site-icon">${site.icon}</span>
       <span class="site-name">${site.label}</span>
       <input type="checkbox" data-site="${site.key}">
     </label>
