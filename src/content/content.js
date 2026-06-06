@@ -117,18 +117,18 @@ function buildOverlay(file) {
           <span>📦 ${formatBytes(file.size)}</span>
           <span>🕐 ${new Date().toLocaleTimeString()}</span>
         </div>
-        <div class="mdit-actions">
+        <div class="mdit-actions mdit-prompt-actions">
           <button class="mdit-btn mdit-primary mdit-convert">⚡ Convert</button>
-          <button class="mdit-btn mdit-secondary mdit-skip">Skip</button>
+          <button class="mdit-btn mdit-secondary mdit-skip">✕ Skip</button>
         </div>
       </div>
 
-      <div class="mdit-body mdit-loading" style="display:none">
+      <div class="mdit-body mdit-loading mdit-hidden">
         <div class="mdit-spinner"></div>
         <span>Converting ${esc(file.name)}…</span>
       </div>
 
-      <div class="mdit-body mdit-result" style="display:none">
+      <div class="mdit-body mdit-result mdit-hidden">
         <div class="mdit-success-row">
           <span>✅ Converted!</span>
           <span class="mdit-stats" id="mdit-stats"></span>
@@ -141,7 +141,7 @@ function buildOverlay(file) {
         </div>
       </div>
 
-      <div class="mdit-body mdit-error" style="display:none">
+      <div class="mdit-body mdit-error mdit-hidden">
         <span class="mdit-err-msg"></span>
         <button class="mdit-btn mdit-secondary mdit-retry" style="margin-top:8px">↩ Retry</button>
       </div>
@@ -156,8 +156,8 @@ function buildOverlay(file) {
   el.querySelector('.mdit-insert').onclick = () => doInsert(card);
   el.querySelector('.mdit-save').onclick = () => doSave(file, card);
   el.querySelector('.mdit-retry').onclick = () => {
-    card.querySelector('.mdit-error').style.display = 'none';
-    card.querySelector('.mdit-prompt').style.display = 'block';
+    hide(card.querySelector('.mdit-error'));
+    show(card.querySelector('.mdit-prompt'), 'block');
   };
 
   // Stop clicks inside card from propagating to page
@@ -165,16 +165,27 @@ function buildOverlay(file) {
   return el;
 }
 
+// Helper — show/hide panels using mdit-hidden class so page CSS can't interfere
+function show(el, displayValue = 'flex') {
+  el.classList.remove('mdit-hidden');
+  // Set the display type explicitly via inline style as a second layer of defence
+  el.style.display = displayValue;
+}
+function hide(el) {
+  el.classList.add('mdit-hidden');
+  el.style.removeProperty('display');
+}
+
 async function runConversion(file, card) {
-  card.querySelector('.mdit-prompt').style.display = 'none';
-  card.querySelector('.mdit-loading').style.display = 'flex';
+  hide(card.querySelector('.mdit-prompt'));
+  show(card.querySelector('.mdit-loading'), 'flex');
 
   try {
     const md = await convertFile(file);
     convertedContent = md;
 
-    card.querySelector('.mdit-loading').style.display = 'none';
-    card.querySelector('.mdit-result').style.display = 'block';
+    hide(card.querySelector('.mdit-loading'));
+    show(card.querySelector('.mdit-result'), 'block');
 
     const words = md.trim().split(/\s+/).length;
     card.querySelector('#mdit-stats').textContent =
@@ -191,9 +202,9 @@ async function runConversion(file, card) {
       sourceUrl: location.href,
     });
   } catch (err) {
-    card.querySelector('.mdit-loading').style.display = 'none';
+    hide(card.querySelector('.mdit-loading'));
     const errEl = card.querySelector('.mdit-error');
-    errEl.style.display = 'block';
+    show(errEl, 'flex');
     errEl.querySelector('.mdit-err-msg').textContent = `❌ ${err.message || 'Conversion failed'}`;
   }
 }
