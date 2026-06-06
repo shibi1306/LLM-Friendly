@@ -23,6 +23,8 @@ const attachedInputs = new WeakSet();
 let convertedContent = null;
 let isEnabled = true;
 let currentSiteEnabled = true;
+let mutationObserver = null;
+let dragListenerAdded = false;
 
 async function init() {
   const settings = await getSettings();
@@ -35,6 +37,43 @@ async function init() {
 
   watchFileInputs();
   setupDragDetection();
+  
+  // Listen for settings updates from background
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'SETTINGS_UPDATED') {
+      handleSettingsUpdate(message.settings);
+    }
+  });
+}
+
+async function handleSettingsUpdate(settings) {
+  isEnabled = settings.enabled !== false;
+  const siteEnabled = await isSiteEnabled(settings);
+  
+  if (!isEnabled || !siteEnabled) {
+    // Disable extension on this tab
+    currentSiteEnabled = false;
+    cleanup();
+  } else if (!currentSiteEnabled && siteEnabled) {
+    // Re-enable extension on this tab
+    currentSiteEnabled = true;
+    watchFileInputs();
+    setupDragDetection();
+  }
+}
+
+function cleanup() {
+  // Remove overlay if present
+  removeOverlay();
+  
+  // Stop mutation observer
+  if (mutationObserver) {
+    mutationObserver.disconnect();
+    mutationObserver = null;
+  }
+  
+  // Clear attached inputs tracking (listeners remain but will be blocked by checks)
+  // We can't remove listeners from WeakSet items, but the checks will prevent action
 }
 
 async function isSiteEnabled(settings) {
@@ -72,7 +111,7 @@ async function isSiteEnabled(settings) {
 function watchFileInputs() {
   document.querySelectorAll('input[type="file"]').forEach(attachListener);
 
-  new MutationObserver(mutations => {
+  mutationObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeType !== 1) continue;
@@ -80,7 +119,8 @@ function watchFileInputs() {
         node.querySelectorAll?.('input[type="file"]').forEach(attachListener);
       }
     }
-  }).observe(document.documentElement, { childList: true, subtree: true });
+  });
+  mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 function attachListener(input) {
@@ -97,6 +137,7 @@ async function onFileInputChange(e) {
 }
 
 function setupDragDetection() {
+  if (dragListenerAdded) return;
   document.addEventListener('drop', e => {
     if (!isEnabled || !currentSiteEnabled) return;
     const file = e.dataTransfer?.files?.[0];
@@ -104,6 +145,7 @@ function setupDragDetection() {
     // Give the page its drop event first
     setTimeout(() => showPromptFixed(file), 250);
   }, { capture: true, passive: true });
+  dragListenerAdded = true;
 }
 
 // ── Overlay ──────────────────────────────────────────────────────────

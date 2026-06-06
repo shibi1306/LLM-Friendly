@@ -141,6 +141,21 @@ async function saveSettings(settings) {
     }
   }
   
+  // Notify all tabs about settings update
+  try {
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, {
+        type: 'SETTINGS_UPDATED',
+        settings: settings
+      }).catch(() => {
+        // Ignore errors for tabs without content script
+      });
+    }
+  } catch (err) {
+    console.error('Failed to notify tabs:', err);
+  }
+  
   return { success: true };
 }
 
