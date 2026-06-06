@@ -109,6 +109,7 @@ async function isSiteEnabled(settings) {
     'x.com': 'grok',
     'huggingface.co': 'huggingface',
     'perplexity.ai': 'perplexity',
+    'www.perplexity.ai': 'perplexity',
   };
   
   const siteKey = siteMap[hostname];

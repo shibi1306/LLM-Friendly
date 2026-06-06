@@ -36,7 +36,8 @@
         "https://grok.com/*",
         "https://x.com/i/grok*",
         "https://huggingface.co/chat/*",
-        "https://perplexity.ai/*"
+        "https://perplexity.ai/*",
+        "https://www.perplexity.ai/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],
