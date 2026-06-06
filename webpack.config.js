@@ -36,10 +36,17 @@ module.exports = (env, argv) => {
             to: 'manifest.json',
             transform: (content) => {
               const manifest = JSON.parse(content);
-              // Remove Firefox-specific fields for Chrome
+              
               if (browser === 'chrome') {
+                // Remove Firefox-specific fields for Chrome
                 delete manifest.browser_specific_settings;
+              } else if (browser === 'firefox') {
+                // Firefox needs background.scripts instead of service_worker
+                manifest.background = {
+                  scripts: ['background.js']
+                };
               }
+              
               return JSON.stringify(manifest, null, 2);
             }
           },
