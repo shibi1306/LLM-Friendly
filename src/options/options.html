@@ -27,6 +27,7 @@
           <div class="input-row">
             <span class="input-prefix">~/Downloads/</span>
             <input type="text" id="subfolderInput" placeholder="MarkItDown" maxlength="80">
+            <button class="btn-browse" id="browseBtn" title="Browse for folder">📂</button>
           </div>
           <div class="field-hint">Folders will be created automatically. Use forward slashes for nested paths (e.g. <code>AI/markdown</code>).</div>
         </div>
@@ -38,6 +39,19 @@
         <p class="desc">Show the conversion prompt on these sites when a file is attached.</p>
         <div class="site-grid" id="siteGrid">
           <!-- Rendered by JS -->
+        </div>
+        
+        <div class="custom-sites-section">
+          <h3>Custom Websites</h3>
+          <p class="desc-small">Add any website where you want the conversion prompt to appear.</p>
+          <div class="custom-site-list" id="customSiteList">
+            <!-- Rendered by JS -->
+          </div>
+          <div class="add-site-row">
+            <input type="url" id="customUrlInput" placeholder="https://example.com/*" class="custom-url-input">
+            <button class="btn btn-add" id="addSiteBtn">+ Add Site</button>
+          </div>
+          <div class="field-hint">Use wildcards like <code>https://example.com/*</code> or <code>https://*.example.com/*</code></div>
         </div>
       </section>
 

@@ -44,7 +44,8 @@
     }
   ],
   "options_page": "options.html",
-  "permissions": ["storage", "downloads", "activeTab", "tabs"],
+  "permissions": ["storage", "downloads", "activeTab", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
       "resources": ["pdf.worker.js"],

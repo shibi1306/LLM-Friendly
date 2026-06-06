@@ -118,6 +118,21 @@ a { color: var(--brand); }
   color: var(--text);
 }
 
+.btn-browse {
+  background: var(--surface);
+  border: none;
+  border-left: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  line-height: 1;
+}
+
+.btn-browse:hover {
+  background: var(--border);
+}
+
 .field-hint {
   font-size: 12px;
   color: var(--text3);
@@ -157,6 +172,97 @@ a { color: var(--brand); }
   font-size: 12px;
   font-weight: 500;
   color: var(--text);
+}
+
+/* ── Custom sites ─────────────────────────────── */
+.custom-sites-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.custom-sites-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.desc-small {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+
+.custom-site-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.custom-site-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  gap: 10px;
+}
+
+.custom-site-url {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.btn-remove {
+  background: transparent;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-remove:hover {
+  transform: scale(1.2);
+}
+
+.add-site-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.custom-url-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+  background: var(--card);
+  color: var(--text);
+}
+
+.custom-url-input:focus {
+  border-color: var(--brand);
+}
+
+.btn-add {
+  background: var(--brand);
+  color: #fff;
+  padding: 9px 16px;
+  white-space: nowrap;
 }
 
 /* ── Toggle rows ──────────────────────────────── */

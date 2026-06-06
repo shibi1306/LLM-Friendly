@@ -12,7 +12,48 @@ const DEFAULT_SETTINGS = {
   },
   autoConvert: false,
   enabled: true,
+  customSites: [],
 };
+
+// Load custom sites on extension startup
+chrome.runtime.onInstalled.addListener(async () => {
+  const settings = await getSettings();
+  if (settings.customSites && settings.customSites.length > 0) {
+    await registerCustomSites(settings.customSites);
+  }
+});
+
+// Also load on startup (when browser starts)
+chrome.runtime.onStartup.addListener(async () => {
+  const settings = await getSettings();
+  if (settings.customSites && settings.customSites.length > 0) {
+    await registerCustomSites(settings.customSites);
+  }
+});
+
+async function registerCustomSites(customSites) {
+  try {
+    // Unregister old custom scripts
+    const registered = await chrome.scripting.getRegisteredContentScripts();
+    const customScriptIds = registered.filter(s => s.id.startsWith('custom-site-')).map(s => s.id);
+    if (customScriptIds.length > 0) {
+      await chrome.scripting.unregisterContentScripts({ ids: customScriptIds });
+    }
+    
+    // Register new custom scripts
+    const scripts = customSites.map((url, idx) => ({
+      id: `custom-site-${idx}`,
+      matches: [url],
+      js: ['content.js'],
+      css: ['content.css'],
+      runAt: 'document_idle',
+    }));
+    
+    await chrome.scripting.registerContentScripts(scripts);
+  } catch (err) {
+    console.error('Failed to register custom site scripts:', err);
+  }
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
@@ -83,6 +124,23 @@ async function getSettings() {
 
 async function saveSettings(settings) {
   await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+  
+  // Register/unregister content scripts for custom sites
+  if (settings.customSites && settings.customSites.length > 0) {
+    await registerCustomSites(settings.customSites);
+  } else {
+    // Clear all custom site scripts if none defined
+    try {
+      const registered = await chrome.scripting.getRegisteredContentScripts();
+      const customScriptIds = registered.filter(s => s.id.startsWith('custom-site-')).map(s => s.id);
+      if (customScriptIds.length > 0) {
+        await chrome.scripting.unregisterContentScripts({ ids: customScriptIds });
+      }
+    } catch (err) {
+      console.error('Failed to unregister custom site scripts:', err);
+    }
+  }
+  
   return { success: true };
 }
 
