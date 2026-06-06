@@ -1,3 +1,5 @@
+import '../polyfill.js';
+
 // Lightweight background service worker — storage, downloads, settings
 const HISTORY_KEY = 'conversion_history';
 const SETTINGS_KEY = 'settings';
@@ -16,7 +18,7 @@ const DEFAULT_SETTINGS = {
 };
 
 // Load custom sites on extension startup
-chrome.runtime.onInstalled.addListener(async () => {
+browser.runtime.onInstalled.addListener(async () => {
   const settings = await getSettings();
   if (settings.customSites && settings.customSites.length > 0) {
     await registerCustomSites(settings.customSites);
@@ -24,7 +26,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 // Also load on startup (when browser starts)
-chrome.runtime.onStartup.addListener(async () => {
+browser.runtime.onStartup.addListener(async () => {
   const settings = await getSettings();
   if (settings.customSites && settings.customSites.length > 0) {
     await registerCustomSites(settings.customSites);
@@ -34,10 +36,10 @@ chrome.runtime.onStartup.addListener(async () => {
 async function registerCustomSites(customSites) {
   try {
     // Unregister old custom scripts
-    const registered = await chrome.scripting.getRegisteredContentScripts();
+    const registered = await browser.scripting.getRegisteredContentScripts();
     const customScriptIds = registered.filter(s => s.id.startsWith('custom-site-')).map(s => s.id);
     if (customScriptIds.length > 0) {
-      await chrome.scripting.unregisterContentScripts({ ids: customScriptIds });
+      await browser.scripting.unregisterContentScripts({ ids: customScriptIds });
     }
     
     // Register new custom scripts
@@ -49,13 +51,13 @@ async function registerCustomSites(customSites) {
       runAt: 'document_idle',
     }));
     
-    await chrome.scripting.registerContentScripts(scripts);
+    await browser.scripting.registerContentScripts(scripts);
   } catch (err) {
     console.error('Failed to register custom site scripts:', err);
   }
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
     case 'SAVE_CONVERTED':
       handleSaveConverted(message).then(sendResponse);
@@ -95,35 +97,35 @@ async function handleSaveConverted({ fileName, markdown, sourceUrl, sourceFileNa
   };
   history.unshift(item);
   if (history.length > MAX_HISTORY) history.splice(MAX_HISTORY);
-  await chrome.storage.local.set({ [HISTORY_KEY]: history });
+  await browser.storage.local.set({ [HISTORY_KEY]: history });
   return { success: true, id: item.id };
 }
 
 async function getHistory() {
-  const data = await chrome.storage.local.get(HISTORY_KEY);
+  const data = await browser.storage.local.get(HISTORY_KEY);
   return data[HISTORY_KEY] || [];
 }
 
 async function clearHistory() {
-  await chrome.storage.local.set({ [HISTORY_KEY]: [] });
+  await browser.storage.local.set({ [HISTORY_KEY]: [] });
   return { success: true };
 }
 
 async function deleteHistoryItem(id) {
   const history = await getHistory();
-  await chrome.storage.local.set({
+  await browser.storage.local.set({
     [HISTORY_KEY]: history.filter(item => item.id !== id),
   });
   return { success: true };
 }
 
 async function getSettings() {
-  const data = await chrome.storage.local.get(SETTINGS_KEY);
+  const data = await browser.storage.local.get(SETTINGS_KEY);
   return { ...DEFAULT_SETTINGS, ...(data[SETTINGS_KEY] || {}) };
 }
 
 async function saveSettings(settings) {
-  await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+  await browser.storage.local.set({ [SETTINGS_KEY]: settings });
   
   // Register/unregister content scripts for custom sites
   if (settings.customSites && settings.customSites.length > 0) {
@@ -131,10 +133,10 @@ async function saveSettings(settings) {
   } else {
     // Clear all custom site scripts if none defined
     try {
-      const registered = await chrome.scripting.getRegisteredContentScripts();
+      const registered = await browser.scripting.getRegisteredContentScripts();
       const customScriptIds = registered.filter(s => s.id.startsWith('custom-site-')).map(s => s.id);
       if (customScriptIds.length > 0) {
-        await chrome.scripting.unregisterContentScripts({ ids: customScriptIds });
+        await browser.scripting.unregisterContentScripts({ ids: customScriptIds });
       }
     } catch (err) {
       console.error('Failed to unregister custom site scripts:', err);
@@ -143,9 +145,9 @@ async function saveSettings(settings) {
   
   // Notify all tabs about settings update
   try {
-    const tabs = await chrome.tabs.query({});
+    const tabs = await browser.tabs.query({});
     for (const tab of tabs) {
-      chrome.tabs.sendMessage(tab.id, {
+      browser.tabs.sendMessage(tab.id, {
         type: 'SETTINGS_UPDATED',
         settings: settings
       }).catch(() => {
@@ -167,7 +169,7 @@ async function downloadFile({ content, fileName, subfolder }) {
   // Use data URL since Blob/URL.createObjectURL not available in service worker
   const dataUrl = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(content);
 
-  const downloadId = await chrome.downloads.download({
+  const downloadId = await browser.downloads.download({
     url: dataUrl,
     filename: `${folder}/${safeName}`,
     saveAs: false,

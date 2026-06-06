@@ -1,3 +1,4 @@
+import '../polyfill.js';
 import { convertFile, isSupported, formatBytes } from '../converters/index.js';
 import './content.css';
 
@@ -50,7 +51,7 @@ async function init() {
   setupPasteDetection();
   
   // Listen for settings updates from background
-  chrome.runtime.onMessage.addListener((message) => {
+  browser.runtime.onMessage.addListener((message) => {
     if (message.type === 'SETTINGS_UPDATED') {
       console.log('[MarkItDown] Settings updated:', message.settings);
       handleSettingsUpdate(message.settings);
@@ -352,7 +353,7 @@ async function runConversion(file, card) {
     card.querySelector('#mdit-preview').textContent = preview;
 
     try {
-      await chrome.runtime.sendMessage({
+      await browser.runtime.sendMessage({
         type: 'SAVE_CONVERTED',
         fileName: file.name.replace(/\.[^.]+$/, '') + '.md',
         sourceFileName: file.name,
@@ -422,7 +423,7 @@ async function doSave(file, card) {
   const mdName = file.name.replace(/\.[^.]+$/, '') + '.md';
   
   try {
-    const res = await chrome.runtime.sendMessage({
+    const res = await browser.runtime.sendMessage({
       type: 'DOWNLOAD_FILE',
       content: convertedContent,
       fileName: mdName,
@@ -485,12 +486,12 @@ function fileLabel(name) {
 
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, res => resolve(res || {}));
+    browser.runtime.sendMessage({ type: 'GET_SETTINGS' }, res => resolve(res || {}));
   });
 }
 
 // Handle INSERT_TEXT messages from the popup
-chrome.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'INSERT_TEXT' && message.text) {
     const hostname = location.hostname;
     const selector = SITE_INPUT_SELECTORS[hostname] || '[contenteditable="true"], textarea';

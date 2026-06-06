@@ -1,3 +1,4 @@
+import '../polyfill.js';
 import './options.css';
 
 const SITES = [
@@ -16,7 +17,7 @@ const SITES = [
 let settings = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-  settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
+  settings = await browser.runtime.sendMessage({ type: 'GET_SETTINGS' });
 
   renderSiteGrid();
   renderCustomSites();
@@ -60,7 +61,7 @@ function loadUI() {
 }
 
 async function loadHistoryCount() {
-  const history = await chrome.runtime.sendMessage({ type: 'GET_HISTORY' }) || [];
+  const history = await browser.runtime.sendMessage({ type: 'GET_HISTORY' }) || [];
   document.getElementById('historyCount').textContent =
     `${history.length} conversion${history.length !== 1 ? 's' : ''} stored locally`;
 }
@@ -84,7 +85,7 @@ async function save() {
     customSites: settings.customSites || []
   };
 
-  await chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', settings: newSettings });
+  await browser.runtime.sendMessage({ type: 'SAVE_SETTINGS', settings: newSettings });
   settings = newSettings;
 
   const status = document.getElementById('saveStatus');
@@ -106,7 +107,7 @@ async function save() {
 
 async function clearHistory() {
   if (!confirm('Clear all conversion history? This cannot be undone.')) return;
-  await chrome.runtime.sendMessage({ type: 'CLEAR_HISTORY' });
+  await browser.runtime.sendMessage({ type: 'CLEAR_HISTORY' });
   loadHistoryCount();
   const status = document.getElementById('saveStatus');
   status.textContent = '🗑️ History cleared';

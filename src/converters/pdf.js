@@ -5,7 +5,7 @@ let workerConfigured = false;
 function configurePdfWorker() {
   if (workerConfigured) return;
   // Reference the bundled worker file as an extension resource
-  pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
   workerConfigured = true;
 }
 

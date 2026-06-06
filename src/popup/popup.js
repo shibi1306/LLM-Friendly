@@ -1,3 +1,4 @@
+import '../polyfill.js';
 import { convertFile, isSupported, formatBytes } from '../converters/index.js';
 import './popup.css';
 
@@ -12,12 +13,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderHistory();
 
   document.getElementById('optionsBtn').onclick = () => {
-    chrome.runtime.openOptionsPage();
+    browser.runtime.openOptionsPage();
   };
 
   document.getElementById('clearAllBtn').onclick = async () => {
     if (confirm('Clear all conversion history?')) {
-      await chrome.runtime.sendMessage({ type: 'CLEAR_HISTORY' });
+      await browser.runtime.sendMessage({ type: 'CLEAR_HISTORY' });
       renderHistory();
     }
   };
@@ -80,7 +81,7 @@ async function handleFile(file) {
     document.getElementById('resultFile').textContent = currentFileName;
 
     // Save to history
-    await chrome.runtime.sendMessage({
+    await browser.runtime.sendMessage({
       type: 'SAVE_CONVERTED',
       fileName: currentFileName,
       sourceFileName: file.name,
@@ -107,7 +108,7 @@ function copyMd() {
 
 async function saveMd() {
   if (!currentMd || !currentFileName) return;
-  await chrome.runtime.sendMessage({
+  await browser.runtime.sendMessage({
     type: 'DOWNLOAD_FILE',
     content: currentMd,
     fileName: currentFileName,
@@ -118,9 +119,9 @@ async function saveMd() {
 async function insertMd() {
   if (!currentMd) return;
   // Get the active tab and send a message to insert
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab?.id) {
-    chrome.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: currentMd });
+    browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: currentMd });
   }
   flash('qInsertBtn', '✅ Sent!', '✏️ Insert');
 }
@@ -128,7 +129,7 @@ async function insertMd() {
 // ── History rendering ──────────────────────────────────────────────────
 
 async function renderHistory() {
-  const history = await chrome.runtime.sendMessage({ type: 'GET_HISTORY' }) || [];
+  const history = await browser.runtime.sendMessage({ type: 'GET_HISTORY' }) || [];
   const list = document.getElementById('historyList');
   const empty = document.getElementById('emptyState');
 
@@ -175,7 +176,7 @@ function buildHistItem(item) {
   `;
 
   el.querySelector('.del-btn').onclick = async () => {
-    await chrome.runtime.sendMessage({ type: 'DELETE_HISTORY_ITEM', id: item.id });
+    await browser.runtime.sendMessage({ type: 'DELETE_HISTORY_ITEM', id: item.id });
     el.remove();
     const remaining = document.querySelectorAll('.hist-item').length;
     if (remaining === 0) {
@@ -189,7 +190,7 @@ function buildHistItem(item) {
   };
 
   el.querySelector('.hist-save').onclick = async () => {
-    await chrome.runtime.sendMessage({
+    await browser.runtime.sendMessage({
       type: 'DOWNLOAD_FILE',
       content: item.markdown,
       fileName: item.fileName,
@@ -198,9 +199,9 @@ function buildHistItem(item) {
   };
 
   el.querySelector('.hist-insert').onclick = async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: item.markdown });
+      browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: item.markdown });
       flash2(el.querySelector('.hist-insert'), '✅ Sent!', '✏️ Insert');
     }
   };

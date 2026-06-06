@@ -1,8 +1,18 @@
 # MarkItDown Browser Extension
 
-A **Chrome and Firefox** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
+A **Chrome, Firefox, and Safari** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
 
 Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplexity, HuggingFace Chat, and more.
+
+## Browser Support
+
+| Browser | Status | Installation |
+|---------|--------|--------------|
+| **Chrome** | ✅ Fully supported | Load unpacked from `dist/` folder |
+| **Firefox** | ✅ Fully supported | Load from `dist-firefox/` or install `.xpi` |
+| **Safari** | ✅ Fully supported | Requires Xcode conversion (macOS only) |
+| **Edge** | ✅ Fully supported | Same as Chrome (Chromium-based) |
+| **Brave** | ✅ Fully supported | Same as Chrome (Chromium-based) |
 
 ---
 
@@ -42,10 +52,21 @@ Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplex
 ```bash
 cd extension
 npm install
+
+# Build for all browsers
 npm run build
+
+# Or build specific browsers
+npm run build:chrome   # Outputs to dist/
+npm run build:firefox  # Outputs to dist-firefox/
+
+# Create distribution packages
+npm run package:chrome   # Creates markitdown-chrome.zip
+npm run package:firefox  # Creates markitdown-firefox.xpi
+npm run package:all      # Creates both packages
 ```
 
-The built extension will be in the `dist/` folder.
+The built extensions will be in their respective folders.
 
 ### Load in Chrome
 
@@ -58,12 +79,34 @@ The built extension will be in the `dist/` folder.
 
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click **Load Temporary Add-on**
-3. Select any file inside `extension/dist/` (e.g. `manifest.json`)
+3. Navigate to `extension/dist-firefox/` and select `manifest.json`
+
+**For permanent installation in Firefox:**
+- Submit the `markitdown-firefox.xpi` to [Firefox Add-ons](https://addons.mozilla.org/) for review
+- Or load it temporarily each session via about:debugging
+
+### Load in Safari (macOS only)
+
+Safari requires converting the web extension to a native app wrapper:
+
+1. **Prerequisites:** Xcode 13+ installed
+2. **Convert the extension:**
+   ```bash
+   xcrun safari-web-extension-converter dist \
+     --app-name "MarkItDown Converter" \
+     --bundle-identifier com.markitdown.converter \
+     --macos-only
+   ```
+3. **Open the generated Xcode project** and build/run
+4. **Enable the extension** in Safari → Preferences → Extensions
+
+**Note:** Safari extensions require Apple Developer signing for public distribution.
 
 ### Development (watch mode)
 
 ```bash
-npm run dev
+npm run dev          # Chrome (default)
+npm run dev:firefox  # Firefox
 ```
 
 Changes rebuild automatically. Reload the extension in the browser after each rebuild.

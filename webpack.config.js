@@ -4,6 +4,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = (env, argv) => {
   const isDev = argv.mode === 'development';
+  const browser = env.browser || 'chrome';
+  const outputDir = browser === 'chrome' ? 'dist' : `dist-${browser}`;
 
   return {
     entry: {
@@ -13,7 +15,7 @@ module.exports = (env, argv) => {
       options: './src/options/options.js',
     },
     output: {
-      path: path.resolve(__dirname, 'dist'),
+      path: path.resolve(__dirname, outputDir),
       filename: '[name].js',
       clean: true,
     },
@@ -29,10 +31,22 @@ module.exports = (env, argv) => {
       new MiniCssExtractPlugin({ filename: '[name].css' }),
       new CopyPlugin({
         patterns: [
-          { from: 'manifest.json', to: 'manifest.json' },
+          { 
+            from: 'manifest.json', 
+            to: 'manifest.json',
+            transform: (content) => {
+              const manifest = JSON.parse(content);
+              // Remove Firefox-specific fields for Chrome
+              if (browser === 'chrome') {
+                delete manifest.browser_specific_settings;
+              }
+              return JSON.stringify(manifest, null, 2);
+            }
+          },
           { from: 'icons', to: 'icons' },
           { from: 'src/popup/popup.html', to: 'popup.html' },
           { from: 'src/options/options.html', to: 'options.html' },
+          { from: 'src/polyfill.js', to: 'polyfill.js' },
           {
             from: 'node_modules/pdfjs-dist/build/pdf.worker.min.js',
             to: 'pdf.worker.js',
