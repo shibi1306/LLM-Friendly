@@ -195,25 +195,41 @@
   gap: 8px;
 }
 
-/* Prompt actions: Convert + Skip stretch to fill full card width */
+/* Prompt row: question on the left, icon buttons on the right */
+.mdit-prompt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mdit-prompt-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Prompt actions: two icon-only circular buttons */
 .mdit-prompt-actions {
   display: flex;
-  gap: 8px;
-  width: 100%;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .mdit-prompt-actions .mdit-btn {
-  flex-shrink: 1;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .mdit-prompt-actions .mdit-primary {
-  flex: 3;
-  min-width: 0;
+  flex: none;
 }
 
 .mdit-prompt-actions .mdit-secondary {
-  flex: 1;
-  min-width: 0;
+  flex: none;
 }
 
 .mdit-result-actions {

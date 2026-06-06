@@ -112,14 +112,18 @@ function buildOverlay(file) {
       </div>
 
       <div class="mdit-body mdit-prompt">
-        <p>Convert <strong>${esc(fileLabel(file.name))}</strong> to Markdown?</p>
-        <div class="mdit-meta">
-          <span>📦 ${formatBytes(file.size)}</span>
-          <span>🕐 ${new Date().toLocaleTimeString()}</span>
-        </div>
-        <div class="mdit-actions mdit-prompt-actions">
-          <button class="mdit-btn mdit-primary mdit-convert">⚡ Convert</button>
-          <button class="mdit-btn mdit-secondary mdit-skip">✕ Skip</button>
+        <div class="mdit-prompt-row">
+          <div class="mdit-prompt-text">
+            <p>Convert <strong>${esc(fileLabel(file.name))}</strong> to Markdown?</p>
+            <div class="mdit-meta">
+              <span>📦 ${formatBytes(file.size)}</span>
+              <span>🕐 ${new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
+          <div class="mdit-actions mdit-prompt-actions">
+            <button class="mdit-btn mdit-primary mdit-convert" title="Convert to Markdown">✓</button>
+            <button class="mdit-btn mdit-secondary mdit-skip" title="Skip">✕</button>
+          </div>
         </div>
       </div>
 
