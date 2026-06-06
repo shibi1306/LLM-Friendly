@@ -4,8 +4,19 @@ let workerConfigured = false;
 
 function configurePdfWorker() {
   if (workerConfigured) return;
-  // Reference the bundled worker file as an extension resource
-  pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
+  
+  // Detect Firefox - it has issues with workers in extension context
+  const isFirefox = typeof InstallTrigger !== 'undefined' || 
+                    navigator.userAgent.includes('Firefox');
+  
+  if (isFirefox) {
+    // Disable worker for Firefox - use main thread instead
+    pdfjsLib.GlobalWorkerOptions.workerSrc = null;
+  } else {
+    // Use worker for Chrome/Safari
+    pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
+  }
+  
   workerConfigured = true;
 }
 
