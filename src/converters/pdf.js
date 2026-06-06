@@ -5,17 +5,8 @@ let workerConfigured = false;
 function configurePdfWorker() {
   if (workerConfigured) return;
   
-  // Detect Firefox - it has issues with workers in extension context
-  const isFirefox = typeof InstallTrigger !== 'undefined' || 
-                    navigator.userAgent.includes('Firefox');
-  
-  if (isFirefox) {
-    // Disable worker for Firefox - use main thread instead
-    pdfjsLib.GlobalWorkerOptions.workerSrc = null;
-  } else {
-    // Use worker for Chrome/Safari
-    pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
-  }
+  // Always use the bundled worker - Firefox needs it too
+  pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
   
   workerConfigured = true;
 }
