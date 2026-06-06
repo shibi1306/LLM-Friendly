@@ -1,6 +1,6 @@
 # MarkItDown Browser Extension
 
-A **Chrome, Firefox, and Safari** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
+A **Chrome and Safari** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
 
 Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplexity, HuggingFace Chat, and more.
 
@@ -9,10 +9,10 @@ Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplex
 | Browser | Status | Installation |
 |---------|--------|--------------|
 | **Chrome** | ✅ Fully supported | Load unpacked from `dist/` folder |
-| **Firefox** | ✅ Fully supported | Load from `dist-firefox/` or install `.xpi` |
-| **Safari** | ✅ Fully supported | Requires Xcode conversion (macOS only) |
 | **Edge** | ✅ Fully supported | Same as Chrome (Chromium-based) |
 | **Brave** | ✅ Fully supported | Same as Chrome (Chromium-based) |
+| **Safari** | ✅ Fully supported | Requires Xcode conversion (macOS only) |
+| **Firefox** | ❌ Not supported | PDF.js worker compatibility issues |
 
 ---
 
@@ -52,38 +52,18 @@ Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplex
 ```bash
 cd extension
 npm install
-
-# Build for all browsers
-npm run build
-
-# Or build specific browsers
-npm run build:chrome   # Outputs to dist/
-npm run build:firefox  # Outputs to dist-firefox/
-
-# Create distribution packages
-npm run package:chrome   # Creates markitdown-chrome.zip
-npm run package:firefox  # Creates markitdown-firefox.xpi
-npm run package:all      # Creates both packages
+npm run build  # Outputs to dist/
+npm run package  # Creates markitdown-chrome.zip
 ```
 
-The built extensions will be in their respective folders.
+The built extension will be in the `dist/` folder.
 
-### Load in Chrome
+### Load in Chrome/Edge/Brave
 
-1. Open `chrome://extensions`
+1. Open `chrome://extensions` (or `edge://extensions` for Edge)
 2. Enable **Developer mode** (top right)
 3. Click **Load unpacked**
 4. Select the `extension/dist/` folder
-
-### Load in Firefox
-
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on**
-3. Navigate to `extension/dist-firefox/` and select `manifest.json`
-
-**For permanent installation in Firefox:**
-- Submit the `markitdown-firefox.xpi` to [Firefox Add-ons](https://addons.mozilla.org/) for review
-- Or load it temporarily each session via about:debugging
 
 ### Load in Safari (macOS only)
 
@@ -105,8 +85,7 @@ Safari requires converting the web extension to a native app wrapper:
 ### Development (watch mode)
 
 ```bash
-npm run dev          # Chrome (default)
-npm run dev:firefox  # Firefox
+npm run dev  # Watches for changes and rebuilds
 ```
 
 Changes rebuild automatically. Reload the extension in the browser after each rebuild.

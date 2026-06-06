@@ -1,7 +1,5 @@
 node_modules/
 dist/
-dist-firefox/
 *.zip
-*.xpi
 *.DS_Store
 MarkItDown\ Converter/

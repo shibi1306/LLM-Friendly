@@ -51,14 +51,5 @@
       "resources": ["pdf.worker.js"],
       "matches": ["<all_urls>"]
     }
-  ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "markitdown-converter@extension",
-      "strict_min_version": "109.0"
-    }
-  }
+  ]
 }

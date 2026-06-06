@@ -1,26 +1,11 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 
-// For Firefox: disable worker globally before any usage
-if (typeof InstallTrigger !== 'undefined' || navigator.userAgent.includes('Firefox')) {
-  // Setting to false disables worker in Firefox
-  pdfjsLib.GlobalWorkerOptions.workerSrc = false;
-}
-
 let workerConfigured = false;
 
 function configurePdfWorker() {
   if (workerConfigured) return;
-  
-  // Detect Firefox
-  const isFirefox = typeof InstallTrigger !== 'undefined' || 
-                    navigator.userAgent.includes('Firefox');
-  
-  if (!isFirefox) {
-    // Chrome/Safari: use the bundled worker for better performance
-    pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
-  }
-  // Firefox: already set to false above (no worker)
-  
+  // Reference the bundled worker file as an extension resource
+  pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
   workerConfigured = true;
 }
 
@@ -29,16 +14,10 @@ export async function convertPDF(file) {
 
   const arrayBuffer = await file.arrayBuffer();
   
-  // Detect Firefox
-  const isFirefox = typeof InstallTrigger !== 'undefined' || 
-                    navigator.userAgent.includes('Firefox');
-  
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(arrayBuffer),
     disableFontFace: true,
     useSystemFonts: false,
-    // Explicitly disable worker for Firefox
-    ...(isFirefox && { useWorkerFetch: false, isEvalSupported: false }),
   });
 
   const pdf = await loadingTask.promise;

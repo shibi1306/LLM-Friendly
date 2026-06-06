@@ -4,8 +4,6 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = (env, argv) => {
   const isDev = argv.mode === 'development';
-  const browser = env.browser || 'chrome';
-  const outputDir = browser === 'chrome' ? 'dist' : `dist-${browser}`;
 
   return {
     entry: {
@@ -15,7 +13,7 @@ module.exports = (env, argv) => {
       options: './src/options/options.js',
     },
     output: {
-      path: path.resolve(__dirname, outputDir),
+      path: path.resolve(__dirname, 'dist'),
       filename: '[name].js',
       clean: true,
     },
@@ -36,17 +34,9 @@ module.exports = (env, argv) => {
             to: 'manifest.json',
             transform: (content) => {
               const manifest = JSON.parse(content);
-              
-              if (browser === 'chrome') {
-                // Remove Firefox-specific fields for Chrome
-                delete manifest.browser_specific_settings;
-              } else if (browser === 'firefox') {
-                // Firefox needs background.scripts instead of service_worker
-                manifest.background = {
-                  scripts: ['background.js']
-                };
-              }
-              
+              // Remove Firefox-specific fields
+              delete manifest.browser_specific_settings;
+              delete manifest.content_security_policy;
               return JSON.stringify(manifest, null, 2);
             }
           },
