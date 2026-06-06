@@ -27,13 +27,23 @@ let mutationObserver = null;
 let dragListenerAdded = false;
 
 async function init() {
+  console.log('[MarkItDown] Initializing on', window.location.hostname);
   const settings = await getSettings();
+  console.log('[MarkItDown] Settings:', settings);
+  
   isEnabled = settings.enabled !== false;
-  if (!isEnabled) return;
+  if (!isEnabled) {
+    console.log('[MarkItDown] Extension globally disabled');
+    return;
+  }
 
   // Check if current site is enabled
   currentSiteEnabled = await isSiteEnabled(settings);
-  if (!currentSiteEnabled) return;
+  console.log('[MarkItDown] Site enabled:', currentSiteEnabled);
+  if (!currentSiteEnabled) {
+    console.log('[MarkItDown] Extension disabled for this site');
+    return;
+  }
 
   watchFileInputs();
   setupDragDetection();
@@ -41,9 +51,12 @@ async function init() {
   // Listen for settings updates from background
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'SETTINGS_UPDATED') {
+      console.log('[MarkItDown] Settings updated:', message.settings);
       handleSettingsUpdate(message.settings);
     }
   });
+  
+  console.log('[MarkItDown] Initialization complete');
 }
 
 async function handleSettingsUpdate(settings) {
@@ -109,30 +122,55 @@ async function isSiteEnabled(settings) {
 // ── File input detection ────────────────────────────────────────────
 
 function watchFileInputs() {
-  document.querySelectorAll('input[type="file"]').forEach(attachListener);
+  // Initial scan for existing file inputs
+  const initialInputs = document.querySelectorAll('input[type="file"]');
+  console.log(`[MarkItDown] Found ${initialInputs.length} file inputs on page load`);
+  initialInputs.forEach(attachListener);
 
+  // Watch for new file inputs being added to DOM
   mutationObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeType !== 1) continue;
-        if (node.matches?.('input[type="file"]')) attachListener(node);
-        node.querySelectorAll?.('input[type="file"]').forEach(attachListener);
+        if (node.matches?.('input[type="file"]')) {
+          console.log('[MarkItDown] Detected new file input:', node);
+          attachListener(node);
+        }
+        const inputs = node.querySelectorAll?.('input[type="file"]');
+        if (inputs && inputs.length > 0) {
+          console.log(`[MarkItDown] Detected ${inputs.length} file inputs in added node`);
+          inputs.forEach(attachListener);
+        }
       }
     }
   });
   mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
+  console.log('[MarkItDown] MutationObserver started');
 }
 
 function attachListener(input) {
   if (attachedInputs.has(input)) return;
   attachedInputs.add(input);
   input.addEventListener('change', onFileInputChange);
+  console.log('[MarkItDown] Attached change listener to file input');
 }
 
 async function onFileInputChange(e) {
-  if (!isEnabled || !currentSiteEnabled) return;
+  console.log('[MarkItDown] File input change event:', e.target.files?.[0]?.name);
+  if (!isEnabled || !currentSiteEnabled) {
+    console.log('[MarkItDown] Extension disabled for this site');
+    return;
+  }
   const file = e.target.files?.[0];
-  if (!file || !isSupported(file.name)) return;
+  if (!file) {
+    console.log('[MarkItDown] No file selected');
+    return;
+  }
+  if (!isSupported(file.name)) {
+    console.log('[MarkItDown] File type not supported:', file.name);
+    return;
+  }
+  console.log('[MarkItDown] Showing prompt for file:', file.name);
   showPrompt(file, e.target);
 }
 
