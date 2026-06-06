@@ -1,5 +1,11 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 
+// For Firefox: disable worker globally before any usage
+if (typeof InstallTrigger !== 'undefined' || navigator.userAgent.includes('Firefox')) {
+  // Setting to false disables worker in Firefox
+  pdfjsLib.GlobalWorkerOptions.workerSrc = false;
+}
+
 let workerConfigured = false;
 
 function configurePdfWorker() {
@@ -10,10 +16,10 @@ function configurePdfWorker() {
                     navigator.userAgent.includes('Firefox');
   
   if (!isFirefox) {
-    // Use worker only for Chrome/Safari - works fine there
+    // Chrome/Safari: use the bundled worker for better performance
     pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
   }
-  // Firefox: leave workerSrc undefined to disable worker (runs in main thread)
+  // Firefox: already set to false above (no worker)
   
   workerConfigured = true;
 }
