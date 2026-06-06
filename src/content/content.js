@@ -351,13 +351,18 @@ async function runConversion(file, card) {
     const preview = md.substring(0, 400) + (md.length > 400 ? '…' : '');
     card.querySelector('#mdit-preview').textContent = preview;
 
-    await chrome.runtime.sendMessage({
-      type: 'SAVE_CONVERTED',
-      fileName: file.name.replace(/\.[^.]+$/, '') + '.md',
-      sourceFileName: file.name,
-      markdown: md,
-      sourceUrl: location.href,
-    });
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'SAVE_CONVERTED',
+        fileName: file.name.replace(/\.[^.]+$/, '') + '.md',
+        sourceFileName: file.name,
+        markdown: md,
+        sourceUrl: location.href,
+      });
+    } catch (err) {
+      console.error('[MarkItDown] Failed to save to history:', err);
+      // Non-critical - don't show error to user
+    }
   } catch (err) {
     hide(card.querySelector('.mdit-loading'));
     const errEl = card.querySelector('.mdit-error');
@@ -415,13 +420,23 @@ function doInsert(card) {
 async function doSave(file, card) {
   if (!convertedContent) return;
   const mdName = file.name.replace(/\.[^.]+$/, '') + '.md';
-  const res = await chrome.runtime.sendMessage({
-    type: 'DOWNLOAD_FILE',
-    content: convertedContent,
-    fileName: mdName,
-  });
-  if (res?.success) {
-    flashBtn(card.querySelector('.mdit-save'), '✅ Saved!', '💾 Save .md');
+  
+  try {
+    const res = await chrome.runtime.sendMessage({
+      type: 'DOWNLOAD_FILE',
+      content: convertedContent,
+      fileName: mdName,
+    });
+    if (res?.success) {
+      flashBtn(card.querySelector('.mdit-save'), '✅ Saved!', '💾 Save .md');
+    }
+  } catch (err) {
+    if (err.message?.includes('Extension context invalidated')) {
+      showContextError(card);
+    } else {
+      console.error('[MarkItDown] Save failed:', err);
+      flashBtn(card.querySelector('.mdit-save'), '❌ Failed', '💾 Save .md');
+    }
   }
 }
 
@@ -429,6 +444,20 @@ function flashBtn(btn, tempText, origText) {
   if (!btn) return;
   btn.textContent = tempText;
   setTimeout(() => { btn.textContent = origText; }, 2000);
+}
+
+function showContextError(card) {
+  const errEl = card.querySelector('.mdit-error');
+  if (!errEl) return;
+  
+  hide(card.querySelector('.mdit-result'));
+  show(errEl, 'flex');
+  
+  const msg = errEl.querySelector('.mdit-err-msg');
+  msg.innerHTML = `
+    ⚠️ Extension was reloaded.<br>
+    <small style="font-size:11px;opacity:0.8;">Please refresh this page or copy the markdown above.</small>
+  `;
 }
 
 function removeOverlay() {
