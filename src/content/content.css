@@ -3,13 +3,9 @@
 
 #mditdown-root {
   all: initial;
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
+  /* position/bottom/right set by JS depending on anchor location */
   z-index: 2147483647;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', sans-serif;
-  /* Never let the card clip off the left edge of narrow viewports */
-  max-width: calc(100vw - 32px);
 }
 
 #mditdown-root * {

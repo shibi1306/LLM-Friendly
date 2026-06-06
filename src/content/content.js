@@ -76,14 +76,24 @@ function showPrompt(file, anchor) {
   const el = buildOverlay(file);
   document.body.appendChild(el);
 
-  // Position near the file input anchor
+  // Always use fixed positioning — absolute gets clipped by overflow:hidden ancestors on chat pages
+  el.style.position = 'fixed';
   const rect = anchor?.getBoundingClientRect();
   if (rect) {
-    const top = rect.bottom + window.scrollY + 10;
-    const left = Math.min(rect.left + window.scrollX, window.innerWidth - 390);
-    el.style.position = 'absolute';
-    el.style.top = `${top}px`;
-    el.style.left = `${Math.max(10, left)}px`;
+    const cardWidth = 420;
+    const cardHeight = 160;
+    // Try to appear just below the anchor, clamped to viewport
+    let top = rect.bottom + 10;
+    let right = window.innerWidth - rect.right;
+    // Clamp so card never goes off-screen
+    if (top + cardHeight > window.innerHeight - 16) top = rect.top - cardHeight - 10;
+    if (right < 16) right = 16;
+    if (right + cardWidth > window.innerWidth - 16) right = 16;
+    el.style.top = `${Math.max(16, top)}px`;
+    el.style.right = `${right}px`;
+  } else {
+    el.style.bottom = '24px';
+    el.style.right = '24px';
   }
 }
 
@@ -91,8 +101,8 @@ function showPromptFixed(file) {
   removeOverlay();
   const el = buildOverlay(file);
   el.style.position = 'fixed';
-  el.style.bottom = '20px';
-  el.style.right = '20px';
+  el.style.bottom = '24px';
+  el.style.right = '24px';
   document.body.appendChild(el);
 }
 
