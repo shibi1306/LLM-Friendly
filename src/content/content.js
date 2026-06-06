@@ -47,6 +47,7 @@ async function init() {
 
   watchFileInputs();
   setupDragDetection();
+  setupPasteDetection();
   
   // Listen for settings updates from background
   chrome.runtime.onMessage.addListener((message) => {
@@ -180,10 +181,33 @@ function setupDragDetection() {
     if (!isEnabled || !currentSiteEnabled) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !isSupported(file.name)) return;
+    console.log('[MarkItDown] File dropped:', file.name);
     // Give the page its drop event first
     setTimeout(() => showPromptFixed(file), 250);
   }, { capture: true, passive: true });
   dragListenerAdded = true;
+  console.log('[MarkItDown] Drag-drop detection enabled');
+}
+
+function setupPasteDetection() {
+  document.addEventListener('paste', async (e) => {
+    if (!isEnabled || !currentSiteEnabled) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (const item of items) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file && isSupported(file.name)) {
+          console.log('[MarkItDown] File pasted:', file.name);
+          // Give the page time to process the paste first
+          setTimeout(() => showPromptFixed(file), 300);
+          break;
+        }
+      }
+    }
+  }, { capture: true, passive: true });
+  console.log('[MarkItDown] Paste detection enabled');
 }
 
 // ── Overlay ──────────────────────────────────────────────────────────
