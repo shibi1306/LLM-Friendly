@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkItDown Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <span class="header-logo">M↓</span>
+      <div>
+        <h1>MarkItDown Settings</h1>
+        <p>Configure how the extension behaves</p>
+      </div>
+    </header>
+
+    <main class="page-main">
+
+      <!-- Save location -->
+      <section class="card">
+        <h2>📁 Save Location</h2>
+        <p class="desc">Converted <code>.md</code> files are saved to a subfolder inside your <strong>Downloads</strong> folder.</p>
+        <div class="field">
+          <label for="subfolderInput">Subfolder name</label>
+          <div class="input-row">
+            <span class="input-prefix">~/Downloads/</span>
+            <input type="text" id="subfolderInput" placeholder="MarkItDown" maxlength="80">
+          </div>
+          <div class="field-hint">Folders will be created automatically. Use forward slashes for nested paths (e.g. <code>AI/markdown</code>).</div>
+        </div>
+      </section>
+
+      <!-- Enabled sites -->
+      <section class="card">
+        <h2>🌐 Enabled Sites</h2>
+        <p class="desc">Show the conversion prompt on these sites when a file is attached.</p>
+        <div class="site-grid" id="siteGrid">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- Behaviour -->
+      <section class="card">
+        <h2>⚙️ Behaviour</h2>
+
+        <label class="toggle-row" id="toggleEnabled">
+          <div>
+            <div class="toggle-label">Enable extension</div>
+            <div class="toggle-desc">Globally enable or disable the file-detection overlay.</div>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="chkEnabled">
+            <span class="slider"></span>
+          </div>
+        </label>
+
+        <label class="toggle-row" id="toggleAutoConvert">
+          <div>
+            <div class="toggle-label">Auto-convert on attach</div>
+            <div class="toggle-desc">Automatically start conversion without asking each time.</div>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="chkAutoConvert">
+            <span class="slider"></span>
+          </div>
+        </label>
+      </section>
+
+      <!-- History -->
+      <section class="card">
+        <h2>🗂️ Conversion History</h2>
+        <p class="desc">History is stored locally in your browser and never leaves your device.</p>
+        <div class="row">
+          <span id="historyCount" class="stat-text">Loading…</span>
+          <button class="btn btn-danger" id="clearHistoryBtn">🗑️ Clear History</button>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="card">
+        <h2>ℹ️ About</h2>
+        <div class="about-grid">
+          <span>Extension version</span><span>1.0.0</span>
+          <span>Powered by</span>
+          <span><a href="https://github.com/microsoft/markitdown" target="_blank" rel="noopener">microsoft/markitdown</a> logic ported to JS</span>
+          <span>Formats supported</span>
+          <span>PDF, DOCX, XLSX, PPTX, CSV, HTML, TXT, JSON, Images</span>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Save bar -->
+    <footer class="save-bar">
+      <span id="saveStatus" class="save-status"></span>
+      <button class="btn btn-primary" id="saveBtn">Save Settings</button>
+    </footer>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

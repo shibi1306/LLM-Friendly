@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkItDown Converter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-brand">
+        <span class="brand-logo">M↓</span>
+        <div>
+          <div class="brand-name">MarkItDown</div>
+          <div class="brand-sub">Document Converter</div>
+        </div>
+      </div>
+      <button class="icon-btn" id="optionsBtn" title="Settings">⚙️</button>
+    </header>
+
+    <!-- Quick Convert -->
+    <section class="section">
+      <div class="section-label">Quick Convert</div>
+      <div class="drop-zone" id="dropZone">
+        <span class="drop-icon">📁</span>
+        <p>Drop a file here or <label class="browse-link">browse<input type="file" id="fileInput"
+          accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.pptx,.ppt,.html,.htm,.txt,.md,.json,.png,.jpg,.jpeg,.gif,.webp,.bmp"></label></p>
+        <p class="drop-hint">PDF, DOCX, XLSX, PPTX, HTML, images…</p>
+      </div>
+
+      <div class="conv-progress" id="convProgress" style="display:none">
+        <div class="mini-spinner"></div>
+        <span id="convFileName">Converting…</span>
+      </div>
+
+      <div class="conv-result" id="convResult" style="display:none">
+        <div class="result-top">
+          <span class="result-ok">✅ Converted</span>
+          <span class="result-file" id="resultFile"></span>
+        </div>
+        <div class="result-btns">
+          <button class="btn btn-primary" id="qCopyBtn">📋 Copy</button>
+          <button class="btn btn-secondary" id="qSaveBtn">💾 Save .md</button>
+          <button class="btn btn-secondary" id="qInsertBtn">✏️ Insert</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="section section-history">
+      <div class="section-header">
+        <span class="section-label">History</span>
+        <button class="text-btn" id="clearAllBtn">Clear all</button>
+      </div>
+      <div id="historyList" class="history-list">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">📭</div>
+          <p>No conversions yet</p>
+          <p class="empty-hint">Convert a file on any supported chat site</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
