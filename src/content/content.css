@@ -207,10 +207,10 @@
   min-width: 0;
 }
 
-/* Prompt actions: two icon-only circular buttons */
+/* Prompt actions: two icon-only circular buttons side by side */
 .mdit-prompt-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 6px;
   flex-shrink: 0;
 }
