@@ -21,7 +21,7 @@
 }
 /* -- Card shell -- */
 .mdit-card {
-  width: 320px;
+  width: 280px;
   max-width: calc(100vw - 48px);
   background: #ffffff;
   border: 1px solid #e4e0f0;
@@ -32,7 +32,7 @@
   overflow: hidden;
   animation: mdit-slidein 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   color: #0f0d1a;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -44,21 +44,21 @@
 .mdit-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 8px 10px;
   background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 55%, #7c3aed 100%);
   color: #fff;
 }
 
 .mdit-logo {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: -0.5px;
   flex-shrink: 0;
   background: rgba(255,255,255,0.18);
   border: 1px solid rgba(255,255,255,0.22);
-  padding: 3px 6px;
-  border-radius: 6px;
+  padding: 2px 5px;
+  border-radius: 5px;
 }
 
 .mdit-title {
@@ -105,20 +105,20 @@
 }
 /* -- Body sections -- */
 .mdit-body {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 /* -- Prompt -- */
 .mdit-prompt p {
   color: #2d2640;
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-size: 11px;
+  margin-bottom: 3px;
   font-weight: 400;
 }
 
 .mdit-meta {
   display: flex;
-  gap: 10px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 10px;
   color: #a09bbd;
   margin-bottom: 0;
   align-items: center;
@@ -216,11 +216,11 @@
 }
 
 .mdit-prompt-actions .mdit-btn {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border-radius: 50%;
-  font-size: 14px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
