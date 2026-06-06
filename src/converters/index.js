@@ -8,8 +8,7 @@ import { convertText } from './text.js';
 const SUPPORTED_EXTENSIONS = [
   'pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv',
   'pptx', 'ppt', 'html', 'htm', 'txt', 'md',
-  'markdown', 'json', 'png', 'jpg', 'jpeg',
-  'gif', 'webp', 'bmp',
+  'markdown', 'json',
 ];
 
 export function isSupported(filename) {
@@ -41,13 +40,6 @@ export async function convertFile(file) {
       return convertHTML(file);
     case 'json':
       return convertJSON(file);
-    case 'png':
-    case 'jpg':
-    case 'jpeg':
-    case 'gif':
-    case 'webp':
-    case 'bmp':
-      return convertImage(file);
     default:
       return convertText(file);
   }
@@ -62,21 +54,6 @@ async function convertJSON(file) {
   } catch {
     return `# ${title}\n\n\`\`\`\n${text}\n\`\`\`\n`;
   }
-}
-
-function convertImage(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target.result;
-      resolve(
-        `# ${file.name}\n\n` +
-        `![${file.name}](${dataUrl})\n\n` +
-        `*Image: ${file.name} (${formatBytes(file.size)})*\n`
-      );
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 export function formatBytes(bytes) {

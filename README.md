@@ -1,6 +1,6 @@
 # MarkItDown Browser Extension
 
-A **Chrome and Firefox** extension that converts PDF, DOCX, XLSX, PPTX, images and more to Markdown — entirely in your browser, no server required.
+A **Chrome and Firefox** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
 
 Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplexity, HuggingFace Chat, and more.
 
@@ -28,7 +28,6 @@ Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplex
 | HTML / HTM | Cleaned HTML → Markdown via Turndown |
 | TXT / MD | Pass-through |
 | JSON | Pretty-printed fenced code block |
-| PNG, JPG, JPEG, GIF, WebP, BMP | Base64 embedded image reference |
 
 ---
 

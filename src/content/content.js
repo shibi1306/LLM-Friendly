@@ -476,8 +476,6 @@ const FILE_LABELS = {
   xlsx: 'Excel Spreadsheet', xls: 'Excel Spreadsheet', csv: 'CSV File',
   pptx: 'PowerPoint', ppt: 'PowerPoint', html: 'HTML File', htm: 'HTML File',
   txt: 'Text File', md: 'Markdown File', json: 'JSON File',
-  png: 'PNG Image', jpg: 'JPEG Image', jpeg: 'JPEG Image',
-  gif: 'GIF Image', webp: 'WebP Image', bmp: 'BMP Image',
 };
 
 function fileLabel(name) {
