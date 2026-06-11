@@ -27,11 +27,16 @@ let currentSiteEnabled = true;
 let mutationObserver = null;
 let dragListenerAdded = false;
 
+// Paste interception — store file+target so we can re-dispatch on skip
+let pendingPasteFile = null;
+let pendingPasteTarget = null;
+let isRedispatchingPaste = false; // guard to prevent intercepting our own synthetic event
+
 async function init() {
   console.log('[MarkItDown] Initializing on', window.location.hostname);
   const settings = await getSettings();
   console.log('[MarkItDown] Settings:', settings);
-  
+
   isEnabled = settings.enabled !== false;
   if (!isEnabled) {
     console.log('[MarkItDown] Extension globally disabled');
@@ -49,7 +54,7 @@ async function init() {
   watchFileInputs();
   setupDragDetection();
   setupPasteDetection();
-  
+
   // Listen for settings updates from background
   browser.runtime.onMessage.addListener((message) => {
     if (message.type === 'SETTINGS_UPDATED') {
@@ -57,14 +62,14 @@ async function init() {
       handleSettingsUpdate(message.settings);
     }
   });
-  
+
   console.log('[MarkItDown] Initialization complete');
 }
 
 async function handleSettingsUpdate(settings) {
   isEnabled = settings.enabled !== false;
   const siteEnabled = await isSiteEnabled(settings);
-  
+
   if (!isEnabled || !siteEnabled) {
     // Disable extension on this tab
     currentSiteEnabled = false;
@@ -80,20 +85,20 @@ async function handleSettingsUpdate(settings) {
 function cleanup() {
   // Remove overlay if present
   removeOverlay();
-  
+
   // Stop mutation observer
   if (mutationObserver) {
     mutationObserver.disconnect();
     mutationObserver = null;
   }
-  
+
   // Clear attached inputs tracking (listeners remain but will be blocked by checks)
   // We can't remove listeners from WeakSet items, but the checks will prevent action
 }
 
 async function isSiteEnabled(settings) {
   const hostname = window.location.hostname;
-  
+
   // Map hostname to site key
   const siteMap = {
     'chatgpt.com': 'chatgpt',
@@ -112,17 +117,17 @@ async function isSiteEnabled(settings) {
     'perplexity.ai': 'perplexity',
     'www.perplexity.ai': 'perplexity',
   };
-  
+
   const siteKey = siteMap[hostname];
-  
+
   // If this is a custom site (not in our preset list), it's enabled
   if (!siteKey) return true;
-  
+
   // Check if the site is enabled in settings
   return settings.enabledSites?.[siteKey] !== false;
 }
 
-// ── File input detection ────────────────────────────────────────────
+// ── File input detection ─────────────────────────────────────────────
 
 function watchFileInputs() {
   // Initial scan for existing file inputs
@@ -191,9 +196,14 @@ function setupDragDetection() {
   console.log('[MarkItDown] Drag-drop detection enabled');
 }
 
+// ── Paste interception ─────────────────────────────────────────────
+
 function setupPasteDetection() {
-  document.addEventListener('paste', async (e) => {
+  document.addEventListener('paste', (e) => {
+    // Don't intercept our own re-dispatched paste events
+    if (isRedispatchingPaste) return;
     if (!isEnabled || !currentSiteEnabled) return;
+
     const items = e.clipboardData?.items;
     if (!items) return;
 
@@ -201,9 +211,17 @@ function setupPasteDetection() {
       if (item.kind === 'file') {
         const file = item.getAsFile();
         if (file && isSupported(file.name)) {
-          console.log('[MarkItDown] File pasted:', file.name);
-          // Prevent the default paste action to stop automatic upload/insertion
+          console.log('[MarkItDown] File pasted, intercepting:', file.name);
+
+          // Store the file and the paste target so we can re-dispatch later
+          pendingPasteFile = file;
+          // Try to get the active element as target; fall back to document.body
+          pendingPasteTarget = e.target || document.activeElement || document.body;
+
+          // Block the page from receiving this paste event
           e.preventDefault();
+          e.stopImmediatePropagation();
+
           // Show conversion prompt immediately
           showPromptFixed(file);
           break;
@@ -211,7 +229,38 @@ function setupPasteDetection() {
       }
     }
   }, { capture: true });
-  console.log('[MarkItDown] Paste detection enabled');
+  console.log('[MarkItDown] Paste detection enabled (with re-dispatch on skip)');
+}
+
+/**
+ * Re-dispatch the stored file as a synthetic paste event so the page
+ * can handle it normally (upload the file). Called when the user
+ * clicks Skip or Close on the conversion prompt.
+ */
+function allowOriginalPaste() {
+  if (!pendingPasteFile) return;
+
+  const file = pendingPasteFile;
+  const target = pendingPasteTarget || document.activeElement || document.body;
+
+  // Clear stored state before re-dispatching
+  pendingPasteFile = null;
+  pendingPasteTarget = null;
+
+  console.log('[MarkItDown] Re-dispatching paste for original upload:', file.name);
+  isRedispatchingPaste = true;
+  try {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const pasteEvent = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: dt,
+    });
+    target.dispatchEvent(pasteEvent);
+  } finally {
+    isRedispatchingPaste = false;
+  }
 }
 
 // ── Overlay ──────────────────────────────────────────────────────────
@@ -309,9 +358,26 @@ function buildOverlay(file) {
   `;
 
   const card = el.querySelector('.mdit-card');
-  el.querySelector('.mdit-close').onclick = removeOverlay;
-  el.querySelector('.mdit-skip').onclick = removeOverlay;
-  el.querySelector('.mdit-convert').onclick = () => runConversion(file, card);
+
+  // Close button — allow the original paste through, then remove overlay
+  el.querySelector('.mdit-close').onclick = () => {
+    allowOriginalPaste();
+    removeOverlay();
+  };
+
+  // Skip button — allow the original paste through, then remove overlay
+  el.querySelector('.mdit-skip').onclick = () => {
+    allowOriginalPaste();
+    removeOverlay();
+  };
+
+  // Convert button — discard pending paste (don't re-dispatch), run conversion
+  el.querySelector('.mdit-convert').onclick = () => {
+    pendingPasteFile = null;
+    pendingPasteTarget = null;
+    runConversion(file, card);
+  };
+
   el.querySelector('.mdit-copy').onclick = () => doCopy(card);
   el.querySelector('.mdit-insert').onclick = () => doInsert(card);
   el.querySelector('.mdit-save').onclick = () => doSave(file, card);
@@ -423,7 +489,7 @@ function doInsert(card) {
 async function doSave(file, card) {
   if (!convertedContent) return;
   const mdName = file.name.replace(/\.[^.]+$/, '') + '.md';
-  
+
   try {
     const res = await browser.runtime.sendMessage({
       type: 'DOWNLOAD_FILE',
@@ -452,10 +518,10 @@ function flashBtn(btn, tempText, origText) {
 function showContextError(card) {
   const errEl = card.querySelector('.mdit-error');
   if (!errEl) return;
-  
+
   hide(card.querySelector('.mdit-result'));
   show(errEl, 'flex');
-  
+
   const msg = errEl.querySelector('.mdit-err-msg');
   msg.innerHTML = `
     ⚠️ Extension was reloaded.<br>
