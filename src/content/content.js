@@ -210,7 +210,7 @@ function setupPasteDetection() {
         }
       }
     }
-  }, { capture: true, passive: true });
+  }, { capture: true });
   console.log('[MarkItDown] Paste detection enabled');
 }
 
