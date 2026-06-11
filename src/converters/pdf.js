@@ -1,11 +1,17 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf.js';
 
 let workerConfigured = false;
 
 function configurePdfWorker() {
   if (workerConfigured) return;
-  // Reference the bundled worker file as an extension resource
+  
+  // Reference the bundled worker file as an extension resource.
+  // In Firefox content scripts, loading this as a Worker usually fails 
+  // due to security policies, which causes PDF.js to automatically 
+  // fall back to the 'fake worker' (main thread). We must set this 
+  // to avoid the "No workerSrc specified" error.
   pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
+  
   workerConfigured = true;
 }
 
@@ -13,11 +19,14 @@ export async function convertPDF(file) {
   configurePdfWorker();
 
   const arrayBuffer = await file.arrayBuffer();
-  
+
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(arrayBuffer),
     disableFontFace: true,
     useSystemFonts: false,
+    disableRange: true,
+    disableStream: true,
+    disableAutoFetch: true,
   });
 
   const pdf = await loadingTask.promise;

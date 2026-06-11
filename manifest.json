@@ -45,10 +45,17 @@
     }
   ],
   "options_page": "options.html",
-  "permissions": ["storage", "downloads", "activeTab", "tabs", "scripting"],
+  "permissions": ["storage", "downloads", "activeTab", "tabs", "scripting", "offscreen"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://tessdata.projectnaptha.com"
+  },
   "web_accessible_resources": [
     {
-      "resources": ["pdf.worker.js"],
+      "resources": [
+        "pdf.worker.js",
+        "tesseract-worker.min.js",
+        "tesseract-core.wasm.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

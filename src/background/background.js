@@ -57,6 +57,23 @@ async function registerCustomSites(customSites) {
   }
 }
 
+let creatingOffscreen;
+
+async function setupOffscreenDocument(path) {
+  if (await chrome.offscreen.hasDocument()) return;
+  if (creatingOffscreen) {
+    await creatingOffscreen;
+  } else {
+    creatingOffscreen = chrome.offscreen.createDocument({
+      url: path,
+      reasons: ['WORKERS'],
+      justification: 'Run Tesseract.js Web Worker for OCR',
+    });
+    await creatingOffscreen;
+    creatingOffscreen = null;
+  }
+}
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
     case 'SAVE_CONVERTED':
@@ -80,8 +97,29 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'DOWNLOAD_FILE':
       downloadFile(message).then(sendResponse);
       return true;
+    case 'CONVERT_IMAGE_BACKGROUND':
+      handleImageOCR(message).then(sendResponse);
+      return true;
   }
 });
+
+async function handleImageOCR(message) {
+  try {
+    await setupOffscreenDocument('offscreen.html');
+    
+    // Forward the message to the offscreen document
+    const response = await chrome.runtime.sendMessage({
+      type: 'OFFSCREEN_OCR',
+      dataUrl: message.dataUrl,
+      fileName: message.fileName,
+    });
+    
+    return response;
+  } catch (err) {
+    console.error('[MarkItDown] Error orchestrating offscreen OCR:', err);
+    return { error: err.message };
+  }
+}
 
 async function handleSaveConverted({ fileName, markdown, sourceUrl, sourceFileName }) {
   const history = await getHistory();

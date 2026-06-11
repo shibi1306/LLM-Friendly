@@ -12,7 +12,6 @@ Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplex
 | **Edge** | ✅ Fully supported | Same as Chrome (Chromium-based) |
 | **Brave** | ✅ Fully supported | Same as Chrome (Chromium-based) |
 | **Safari** | ✅ Fully supported | Requires Xcode conversion (macOS only) |
-| **Firefox** | ❌ Not supported | PDF.js worker compatibility issues |
 
 ---
 
@@ -36,6 +35,7 @@ Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplex
 | CSV | Parsed to Markdown table |
 | PPTX / PPT | Slide text extraction |
 | HTML / HTM | Cleaned HTML → Markdown via Turndown |
+| PNG / JPG / WEBP | OCR via Tesseract.js (background delegation) |
 | TXT / MD | Pass-through |
 | JSON | Pretty-printed fenced code block |
 

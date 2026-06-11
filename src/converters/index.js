@@ -4,11 +4,13 @@ import { convertXLSX } from './xlsx.js';
 import { convertHTML } from './html.js';
 import { convertPPTX } from './pptx.js';
 import { convertText } from './text.js';
+import { convertImage } from './image.js';
 
 const SUPPORTED_EXTENSIONS = [
   'pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv',
   'pptx', 'ppt', 'html', 'htm', 'txt', 'md',
-  'markdown', 'json',
+  'markdown', 'json', 'png', 'jpg', 'jpeg', 'gif',
+  'webp', 'bmp',
 ];
 
 export function isSupported(filename) {
@@ -40,6 +42,13 @@ export async function convertFile(file) {
       return convertHTML(file);
     case 'json':
       return convertJSON(file);
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'gif':
+    case 'webp':
+    case 'bmp':
+      return convertImage(file);
     default:
       return convertText(file);
   }

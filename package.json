@@ -4,17 +4,21 @@
   "description": "Convert PDF, DOCX, XLSX, images and more to Markdown on any AI chat site",
   "scripts": {
     "build": "webpack --mode production",
+    "build:chrome": "npm run build",
     "build:safari": "npm run build && npm run safari:convert",
     "safari:convert": "xcrun safari-web-extension-converter dist --app-name 'MarkItDown Converter' --bundle-identifier com.markitdown.converter --macos-only --force",
     "dev": "webpack --mode development --watch",
     "icons": "node scripts/generate-icons.js",
-    "package": "cd dist && zip -r ../markitdown-chrome.zip ."
+    "package": "cd dist && zip -r ../markitdown-chrome.zip .",
+    "package:chrome": "npm run package"
   },
   "dependencies": {
     "canvas": "^3.2.3",
     "fflate": "^0.8.2",
     "mammoth": "^1.8.0",
     "pdfjs-dist": "^3.11.174",
+    "tesseract.js": "^7.0.0",
+    "tesseract.js-core": "^7.0.0",
     "turndown": "^7.2.0",
     "xlsx": "0.18.5"
   },
@@ -22,6 +26,7 @@
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
     "mini-css-extract-plugin": "^2.9.0",
+    "string-replace-loader": "^3.3.0",
     "webextension-polyfill": "^0.12.0",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4"
