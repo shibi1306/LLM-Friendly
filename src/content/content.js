@@ -196,14 +196,16 @@ function setupPasteDetection() {
     if (!isEnabled || !currentSiteEnabled) return;
     const items = e.clipboardData?.items;
     if (!items) return;
-    
+
     for (const item of items) {
       if (item.kind === 'file') {
         const file = item.getAsFile();
         if (file && isSupported(file.name)) {
           console.log('[MarkItDown] File pasted:', file.name);
-          // Give the page time to process the paste first
-          setTimeout(() => showPromptFixed(file), 300);
+          // Prevent the default paste action to stop automatic upload/insertion
+          e.preventDefault();
+          // Show conversion prompt immediately
+          showPromptFixed(file);
           break;
         }
       }
