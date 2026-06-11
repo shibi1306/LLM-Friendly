@@ -199,7 +199,10 @@ function setupDragDetection() {
 // ── Paste interception ─────────────────────────────────────────────
 
 function setupPasteDetection() {
-  document.addEventListener('paste', (e) => {
+  // Listen on window with capture to beat any site-level window capture handlers.
+  // window capture fires BEFORE document capture — most chat sites use
+  // window-level paste handlers, so we must be first in line.
+  window.addEventListener('paste', (e) => {
     // Don't intercept our own re-dispatched paste events
     if (isRedispatchingPaste) return;
     if (!isEnabled || !currentSiteEnabled) return;
@@ -229,7 +232,7 @@ function setupPasteDetection() {
       }
     }
   }, { capture: true });
-  console.log('[MarkItDown] Paste detection enabled (with re-dispatch on skip)');
+  console.log('[MarkItDown] Paste detection enabled (window capture, with re-dispatch on skip)');
 }
 
 /**
