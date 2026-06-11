@@ -8,8 +8,8 @@ import { convertImage } from './image.js';
 
 const SUPPORTED_EXTENSIONS = [
   'pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv',
-  'pptx', 'ppt', 'html', 'htm', 'txt', 'md',
-  'markdown', 'json', 'png', 'jpg', 'jpeg', 'gif',
+  'pptx', 'ppt', 'html', 'htm', 'txt',
+  'json', 'png', 'jpg', 'jpeg', 'gif',
   'webp', 'bmp',
 ];
 
