@@ -476,7 +476,7 @@ const FILE_LABELS = {
   pdf: 'PDF Document', docx: 'Word Document', doc: 'Word Document',
   xlsx: 'Excel Spreadsheet', xls: 'Excel Spreadsheet', csv: 'CSV File',
   pptx: 'PowerPoint', ppt: 'PowerPoint', html: 'HTML File', htm: 'HTML File',
-  txt: 'Text File', md: 'Markdown File', json: 'JSON File',
+  txt: 'Text File', json: 'JSON File',
 };
 
 function fileLabel(name) {
