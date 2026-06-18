@@ -7,7 +7,7 @@ export async function convertImage(file) {
     reader.readAsDataURL(file);
   });
 
-  // In Chrome MV3, we cannot use Paddle.js locally because it requires 'unsafe-eval' 
+  // In Chrome MV3, we cannot use Paddle.js locally because it requires 'unsafe-eval'
   // (via new Function for tensor math/loops), which is strictly forbidden.
   // Instead, we delegate all OCR to the background service worker using Tesseract.js.
   try {
@@ -16,18 +16,22 @@ export async function convertImage(file) {
       dataUrl: dataUrl,
       fileName: file.name
     });
-    
+
     if (response && response.markdown) {
       return response.markdown;
     }
-    
+
     if (response && response.error) {
       throw new Error(response.error);
     }
-    
+
     throw new Error('Empty response from background OCR');
   } catch (err) {
-    console.error('[MarkItDown] Background OCR failed:', err);
-    throw new Error(`OCR failed: ${err.message}`);
+    console.error('[LLM Friendly] Background OCR failed:', err);
+    let message = `OCR failed: ${err.message}`;
+    if (err.message.includes('Extension context invalidated')) {
+      message = 'OCR failed: Extension context was invalidated. Please try again or reload the page if the problem persists.';
+    }
+    throw new Error(message);
   }
 }

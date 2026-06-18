@@ -28,10 +28,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('clearHistoryBtn').onclick = clearHistory;
   document.getElementById('addSiteBtn').onclick = addCustomSite;
   document.getElementById('browseBtn').onclick = browseFolder;
-  
+
   // Allow Enter key in custom URL input to add site
   document.getElementById('customUrlInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addCustomSite();
+  });
+
+  // History limit slider interaction
+  const historyLimitSlider = document.getElementById('historyLimit');
+  const historyLimitValue = document.getElementById('historyLimitValue');
+  historyLimitSlider.addEventListener('input', () => {
+    historyLimitValue.textContent = historyLimitSlider.value;
   });
 });
 
@@ -55,9 +62,13 @@ function renderSiteGrid() {
 }
 
 function loadUI() {
-  document.getElementById('subfolderInput').value = settings.outputSubfolder || 'MarkItDown';
+  document.getElementById('subfolderInput').value = settings.outputSubfolder || 'LLM Friendly';
   document.getElementById('chkEnabled').checked = settings.enabled !== false;
   document.getElementById('chkAutoConvert').checked = !!settings.autoConvert;
+  // History limit slider
+  const historyLimit = settings.historyLimit ?? 50;
+  document.getElementById('historyLimit').value = historyLimit;
+  document.getElementById('historyLimitValue').textContent = historyLimit;
 }
 
 async function loadHistoryCount() {
@@ -67,22 +78,24 @@ async function loadHistoryCount() {
 }
 
 async function save() {
-  const subfolder = document.getElementById('subfolderInput').value.trim() || 'MarkItDown';
+  const subfolder = document.getElementById('subfolderInput').value.trim() || 'LLM Friendly';
   const enabled = document.getElementById('chkEnabled').checked;
   const autoConvert = document.getElementById('chkAutoConvert').checked;
+  const historyLimit = parseInt(document.getElementById('historyLimit').value, 10);
 
   const enabledSites = {};
   document.querySelectorAll('input[data-site]').forEach(chk => {
     enabledSites[chk.dataset.site] = chk.checked;
   });
 
-  const newSettings = { 
-    ...settings, 
-    outputSubfolder: subfolder, 
-    enabled, 
-    autoConvert, 
+  const newSettings = {
+    ...settings,
+    outputSubfolder: subfolder,
+    enabled,
+    autoConvert,
     enabledSites,
-    customSites: settings.customSites || []
+    customSites: settings.customSites || [],
+    historyLimit
   };
 
   await browser.runtime.sendMessage({ type: 'SAVE_SETTINGS', settings: newSettings });
@@ -93,7 +106,7 @@ async function save() {
   status.style.color = '#059669';
   status.classList.add('visible');
   setTimeout(() => status.classList.remove('visible'), 2500);
-  
+
   // Show reload reminder if custom sites changed
   if (settings.customSites && settings.customSites.length > 0) {
     setTimeout(() => {
@@ -118,19 +131,19 @@ async function clearHistory() {
 function renderCustomSites() {
   const list = document.getElementById('customSiteList');
   const customSites = settings.customSites || [];
-  
+
   if (customSites.length === 0) {
     list.innerHTML = '<p class="desc-small" style="margin: 8px 0; font-style: italic;">No custom sites added yet.</p>';
     return;
   }
-  
+
   list.innerHTML = customSites.map((url, idx) => `
     <div class="custom-site-item">
       <span class="custom-site-url" title="${url}">${url}</span>
       <button class="btn-remove" data-idx="${idx}" title="Remove">✕</button>
     </div>
   `).join('');
-  
+
   list.querySelectorAll('.btn-remove').forEach(btn => {
     btn.onclick = () => removeCustomSite(parseInt(btn.dataset.idx));
   });
@@ -139,33 +152,33 @@ function renderCustomSites() {
 function addCustomSite() {
   const input = document.getElementById('customUrlInput');
   let url = input.value.trim();
-  
+
   if (!url) return;
-  
+
   // Basic validation
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     alert('URL must start with http:// or https://');
     return;
   }
-  
+
   // Add wildcard if not present
   if (!url.includes('*') && !url.endsWith('/')) {
     url += '/*';
   } else if (!url.includes('*')) {
     url += '*';
   }
-  
+
   if (!settings.customSites) settings.customSites = [];
-  
+
   if (settings.customSites.includes(url)) {
     alert('This site is already in your list.');
     return;
   }
-  
+
   settings.customSites.push(url);
   input.value = '';
   renderCustomSites();
-  
+
   // Show save reminder
   const status = document.getElementById('saveStatus');
   status.textContent = '⚠️ Don\'t forget to save!';
@@ -178,7 +191,7 @@ function removeCustomSite(idx) {
   if (!settings.customSites) return;
   settings.customSites.splice(idx, 1);
   renderCustomSites();
-  
+
   const status = document.getElementById('saveStatus');
   status.textContent = '⚠️ Don\'t forget to save!';
   status.style.color = '#f59e0b';
@@ -193,10 +206,10 @@ async function browseFolder() {
       mode: 'readwrite',
       startIn: 'downloads'
     });
-    
+
     // Show the selected folder name
     document.getElementById('subfolderInput').value = dirHandle.name;
-    
+
     const status = document.getElementById('saveStatus');
     status.textContent = `📂 Selected: ${dirHandle.name}`;
     status.style.color = '#059669';

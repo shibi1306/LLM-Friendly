@@ -1,4 +1,4 @@
-# MarkItDown Browser Extension
+# LLM Friendly Browser Extension
 
 A **Chrome and Safari** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
 
@@ -73,7 +73,7 @@ Safari requires converting the web extension to a native app wrapper:
 2. **Convert the extension:**
    ```bash
    xcrun safari-web-extension-converter dist \
-     --app-name "MarkItDown Converter" \
+     --app-name "LLM Friendly" \
      --bundle-identifier com.markitdown.converter \
      --macos-only
    ```
@@ -97,7 +97,7 @@ Changes rebuild automatically. Reload the extension in the browser after each re
 ### On a chat site (ChatGPT, Claude, etc.)
 
 1. Click the paperclip / file attachment button as usual
-2. Select a supported file — the **MarkItDown banner** appears
+2. Select a supported file — the **LLM Friendly banner** appears
 3. Click **⚡ Convert** — conversion runs locally in your browser
 4. Choose an action:
    - **📋 Copy** — copy the Markdown to clipboard
@@ -115,7 +115,7 @@ Changes rebuild automatically. Reload the extension in the browser after each re
 
 Click **⚙️** in the popup (or right-click the extension icon → Options):
 
-- **Save Location** — set the subfolder name within your Downloads folder (default: `MarkItDown`)
+- **Save Location** — set the subfolder name within your Downloads folder (default: `LLM Friendly`)
 - **Enabled Sites** — toggle which chat sites show the conversion prompt
 - **Auto-convert** — skip the prompt and convert automatically
 - **Clear History** — remove all stored conversions

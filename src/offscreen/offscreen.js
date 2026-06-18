@@ -14,7 +14,7 @@ async function handleOCR({ dataUrl, fileName }) {
       workerPath: browser.runtime.getURL('tesseract-worker.min.js'),
       corePath: browser.runtime.getURL('tesseract-core.wasm.js'),
       workerBlobURL: false,
-      logger: m => console.log('[MarkItDown Offscreen] OCR:', m),
+      logger: m => console.log('[LLM Friendly Offscreen] OCR:', m),
     });
 
     const result = await worker.recognize(dataUrl);
@@ -23,7 +23,7 @@ async function handleOCR({ dataUrl, fileName }) {
     const title = fileName.replace(/\.[^.]+$/, '');
     return { markdown: `# ${title}\n\n${result.data.text}\n` };
   } catch (err) {
-    console.error('[MarkItDown Offscreen] OCR error:', err);
+    console.error('[LLM Friendly Offscreen] OCR error:', err);
     return { error: err.message };
   }
 }

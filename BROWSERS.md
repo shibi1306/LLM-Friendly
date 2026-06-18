@@ -52,7 +52,7 @@ npm run build:chrome
 ```bash
 npm run build:chrome  # Use Chrome build as base
 xcrun safari-web-extension-converter dist \
-  --app-name "MarkItDown Converter" \
+  --app-name "LLM Friendly" \
   --bundle-identifier com.markitdown.converter \
   --macos-only
 ```

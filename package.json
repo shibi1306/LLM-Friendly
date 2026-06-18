@@ -6,7 +6,7 @@
     "build": "webpack --mode production",
     "build:chrome": "npm run build",
     "build:safari": "npm run build && npm run safari:convert",
-    "safari:convert": "xcrun safari-web-extension-converter dist --app-name 'MarkItDown Converter' --bundle-identifier com.markitdown.converter --macos-only --force",
+    "safari:convert": "xcrun safari-web-extension-converter dist --app-name 'LLM Friendly' --bundle-identifier com.markitdown.converter --macos-only --force",
     "dev": "webpack --mode development --watch",
     "icons": "node scripts/generate-icons.js",
     "package": "cd dist && zip -r ../markitdown-chrome.zip .",

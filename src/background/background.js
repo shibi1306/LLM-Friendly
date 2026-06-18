@@ -3,10 +3,9 @@ import '../polyfill.js';
 // Lightweight background service worker — storage, downloads, settings
 const HISTORY_KEY = 'conversion_history';
 const SETTINGS_KEY = 'settings';
-const MAX_HISTORY = 100;
 
 const DEFAULT_SETTINGS = {
-  outputSubfolder: 'MarkItDown',
+  outputSubfolder: 'LLM Friendly',
   enabledSites: {
     chatgpt: true, claude: true, gemini: true, copilot: true,
     mistral: true, poe: true, deepseek: true, grok: true,
@@ -15,6 +14,7 @@ const DEFAULT_SETTINGS = {
   autoConvert: false,
   enabled: true,
   customSites: [],
+  historyLimit: 50,
 };
 
 // Load custom sites on extension startup
@@ -41,7 +41,7 @@ async function registerCustomSites(customSites) {
     if (customScriptIds.length > 0) {
       await browser.scripting.unregisterContentScripts({ ids: customScriptIds });
     }
-    
+
     // Register new custom scripts
     const scripts = customSites.map((url, idx) => ({
       id: `custom-site-${idx}`,
@@ -50,7 +50,7 @@ async function registerCustomSites(customSites) {
       css: ['content.css'],
       runAt: 'document_idle',
     }));
-    
+
     await browser.scripting.registerContentScripts(scripts);
   } catch (err) {
     console.error('Failed to register custom site scripts:', err);
@@ -69,8 +69,11 @@ async function setupOffscreenDocument(path) {
       reasons: ['WORKERS'],
       justification: 'Run Tesseract.js Web Worker for OCR',
     });
-    await creatingOffscreen;
-    creatingOffscreen = null;
+    try {
+      await creatingOffscreen;
+    } finally {
+      creatingOffscreen = null;
+    }
   }
 }
 
@@ -104,24 +107,35 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function handleImageOCR(message) {
-  try {
-    await setupOffscreenDocument('offscreen.html');
-    
-    // Forward the message to the offscreen document
-    const response = await chrome.runtime.sendMessage({
-      type: 'OFFSCREEN_OCR',
-      dataUrl: message.dataUrl,
-      fileName: message.fileName,
-    });
-    
-    return response;
-  } catch (err) {
-    console.error('[MarkItDown] Error orchestrating offscreen OCR:', err);
-    return { error: err.message };
+  let lastError = null;
+  // Try up to 2 times
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      await setupOffscreenDocument('offscreen.html');
+
+      // Forward the message to the offscreen document
+      const response = await chrome.runtime.sendMessage({
+        type: 'OFFSCREEN_OCR',
+        dataUrl: message.dataUrl,
+        fileName: message.fileName,
+      });
+
+      return response;
+    } catch (err) {
+      console.error(`[LLM Friendly] Offscreen OCR attempt ${attempt} failed:`, err);
+      lastError = err;
+      // If this was the last attempt, break and return error
+      if (attempt === 2) break;
+      // Small delay before retry
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
+  return { error: lastError?.message || 'Unknown error' };
 }
 
 async function handleSaveConverted({ fileName, markdown, sourceUrl, sourceFileName }) {
+  const settings = await getSettings();
+  const limit = settings.historyLimit ?? 50;
   const history = await getHistory();
   const item = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -134,7 +148,7 @@ async function handleSaveConverted({ fileName, markdown, sourceUrl, sourceFileNa
     charCount: markdown.length,
   };
   history.unshift(item);
-  if (history.length > MAX_HISTORY) history.splice(MAX_HISTORY);
+  if (history.length > limit) history.splice(limit);
   await browser.storage.local.set({ [HISTORY_KEY]: history });
   return { success: true, id: item.id };
 }
@@ -164,7 +178,7 @@ async function getSettings() {
 
 async function saveSettings(settings) {
   await browser.storage.local.set({ [SETTINGS_KEY]: settings });
-  
+
   // Register/unregister content scripts for custom sites
   if (settings.customSites && settings.customSites.length > 0) {
     await registerCustomSites(settings.customSites);
@@ -180,7 +194,7 @@ async function saveSettings(settings) {
       console.error('Failed to unregister custom site scripts:', err);
     }
   }
-  
+
   // Notify all tabs about settings update
   try {
     const tabs = await browser.tabs.query({});
@@ -195,13 +209,21 @@ async function saveSettings(settings) {
   } catch (err) {
     console.error('Failed to notify tabs:', err);
   }
-  
+
+  // Enforce history limit
+  const { historyLimit } = settings;
+  const historyData = await browser.storage.local.get(HISTORY_KEY);
+  const items = historyData[HISTORY_KEY] || [];
+  if (items.length > historyLimit) {
+    await browser.storage.local.set({ [HISTORY_KEY]: items.slice(0, historyLimit) });
+  }
+
   return { success: true };
 }
 
 async function downloadFile({ content, fileName, subfolder }) {
   const settings = await getSettings();
-  const folder = subfolder || settings.outputSubfolder || 'MarkItDown';
+  const folder = subfolder || settings.outputSubfolder || 'LLM Friendly';
   const safeName = fileName.replace(/[<>:"/\\|?*]/g, '_');
 
   // Use data URL since Blob/URL.createObjectURL not available in service worker

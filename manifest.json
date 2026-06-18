@@ -1,21 +1,23 @@
 {
   "manifest_version": 3,
-  "name": "MarkItDown Converter",
+  "name": "LLM Friendly",
   "version": "1.0.0",
   "description": "Convert PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown directly in your browser on any AI chat site.",
   "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16": "icons/LLM_Friendly_16.png",
+    "32": "icons/LLM_Friendly_32.png",
+    "48": "icons/LLM_Friendly_48.png",
+    "128": "icons/LLM_Friendly_128.png"
   },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "16": "icons/LLM_Friendly_16.png",
+      "32": "icons/LLM_Friendly_32.png",
+      "48": "icons/LLM_Friendly_48.png",
+      "128": "icons/LLM_Friendly_128.png"
     },
-    "default_title": "MarkItDown Converter"
+    "default_title": "LLM Friendly"
   },
   "background": {
     "service_worker": "background.js"

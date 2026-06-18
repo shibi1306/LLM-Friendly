@@ -33,21 +33,21 @@ let pendingPasteTarget = null;
 let isRedispatchingPaste = false; // guard to prevent intercepting our own synthetic event
 
 async function init() {
-  console.log('[MarkItDown] Initializing on', window.location.hostname);
+  console.log('[LLM Friendly] Initializing on', window.location.hostname);
   const settings = await getSettings();
-  console.log('[MarkItDown] Settings:', settings);
+  console.log('[LLM Friendly] Settings:', settings);
 
   isEnabled = settings.enabled !== false;
   if (!isEnabled) {
-    console.log('[MarkItDown] Extension globally disabled');
+    console.log('[LLM Friendly] Extension globally disabled');
     return;
   }
 
   // Check if current site is enabled
   currentSiteEnabled = await isSiteEnabled(settings);
-  console.log('[MarkItDown] Site enabled:', currentSiteEnabled);
+  console.log('[LLM Friendly] Site enabled:', currentSiteEnabled);
   if (!currentSiteEnabled) {
-    console.log('[MarkItDown] Extension disabled for this site');
+    console.log('[LLM Friendly] Extension disabled for this site');
     return;
   }
 
@@ -58,12 +58,12 @@ async function init() {
   // Listen for settings updates from background
   browser.runtime.onMessage.addListener((message) => {
     if (message.type === 'SETTINGS_UPDATED') {
-      console.log('[MarkItDown] Settings updated:', message.settings);
+      console.log('[LLM Friendly] Settings updated:', message.settings);
       handleSettingsUpdate(message.settings);
     }
   });
 
-  console.log('[MarkItDown] Initialization complete');
+  console.log('[LLM Friendly] Initialization complete');
 }
 
 async function handleSettingsUpdate(settings) {
@@ -132,7 +132,7 @@ async function isSiteEnabled(settings) {
 function watchFileInputs() {
   // Initial scan for existing file inputs
   const initialInputs = document.querySelectorAll('input[type="file"]');
-  console.log(`[MarkItDown] Found ${initialInputs.length} file inputs on page load`);
+  console.log(`[LLM Friendly] Found ${initialInputs.length} file inputs on page load`);
   initialInputs.forEach(attachListener);
 
   // Watch for new file inputs being added to DOM
@@ -141,44 +141,44 @@ function watchFileInputs() {
       for (const node of m.addedNodes) {
         if (node.nodeType !== 1) continue;
         if (node.matches?.('input[type="file"]')) {
-          console.log('[MarkItDown] Detected new file input:', node);
+          console.log('[LLM Friendly] Detected new file input:', node);
           attachListener(node);
         }
         const inputs = node.querySelectorAll?.('input[type="file"]');
         if (inputs && inputs.length > 0) {
-          console.log(`[MarkItDown] Detected ${inputs.length} file inputs in added node`);
+          console.log(`[LLM Friendly] Detected ${inputs.length} file inputs in added node`);
           inputs.forEach(attachListener);
         }
       }
     }
   });
   mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
-  console.log('[MarkItDown] MutationObserver started');
+  console.log('[LLM Friendly] MutationObserver started');
 }
 
 function attachListener(input) {
   if (attachedInputs.has(input)) return;
   attachedInputs.add(input);
   input.addEventListener('change', onFileInputChange);
-  console.log('[MarkItDown] Attached change listener to file input');
+  console.log('[LLM Friendly] Attached change listener to file input');
 }
 
 async function onFileInputChange(e) {
-  console.log('[MarkItDown] File input change event:', e.target.files?.[0]?.name);
+  console.log('[LLM Friendly] File input change event:', e.target.files?.[0]?.name);
   if (!isEnabled || !currentSiteEnabled) {
-    console.log('[MarkItDown] Extension disabled for this site');
+    console.log('[LLM Friendly] Extension disabled for this site');
     return;
   }
   const file = e.target.files?.[0];
   if (!file) {
-    console.log('[MarkItDown] No file selected');
+    console.log('[LLM Friendly] No file selected');
     return;
   }
   if (!isSupported(file.name)) {
-    console.log('[MarkItDown] File type not supported:', file.name);
+    console.log('[LLM Friendly] File type not supported:', file.name);
     return;
   }
-  console.log('[MarkItDown] Showing prompt for file:', file.name);
+  console.log('[LLM Friendly] Showing prompt for file:', file.name);
   showPrompt(file, e.target);
 }
 
@@ -188,12 +188,12 @@ function setupDragDetection() {
     if (!isEnabled || !currentSiteEnabled) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !isSupported(file.name)) return;
-    console.log('[MarkItDown] File dropped:', file.name);
+    console.log('[LLM Friendly] File dropped:', file.name);
     // Give the page its drop event first
     setTimeout(() => showPromptFixed(file), 250);
   }, { capture: true, passive: true });
   dragListenerAdded = true;
-  console.log('[MarkItDown] Drag-drop detection enabled');
+  console.log('[LLM Friendly] Drag-drop detection enabled');
 }
 
 // ── Paste interception ─────────────────────────────────────────────
@@ -214,7 +214,7 @@ function setupPasteDetection() {
       if (item.kind === 'file') {
         const file = item.getAsFile();
         if (file && isSupported(file.name)) {
-          console.log('[MarkItDown] File pasted, intercepting:', file.name);
+          console.log('[LLM Friendly] File pasted, intercepting:', file.name);
 
           // Store the file and the paste target so we can re-dispatch later
           pendingPasteFile = file;
@@ -232,7 +232,7 @@ function setupPasteDetection() {
       }
     }
   }, { capture: true });
-  console.log('[MarkItDown] Paste detection enabled (window capture, with re-dispatch on skip)');
+  console.log('[LLM Friendly] Paste detection enabled (window capture, with re-dispatch on skip)');
 }
 
 /**
@@ -250,7 +250,7 @@ function allowOriginalPaste() {
   pendingPasteFile = null;
   pendingPasteTarget = null;
 
-  console.log('[MarkItDown] Re-dispatching paste for original upload:', file.name);
+  console.log('[LLM Friendly] Re-dispatching paste for original upload:', file.name);
   isRedispatchingPaste = true;
   try {
     const dt = new DataTransfer();
@@ -275,24 +275,56 @@ function showPrompt(file, anchor) {
 
   // Use fixed positioning so no overflow:hidden ancestor can clip us
   el.style.cssText = 'position:fixed!important;display:block!important;';
-  const cardWidth = 280;
-  const cardHeight = 120;
   const margin = 16;
+
+  // Get actual dimensions from the element since CSS may affect size
+  // Force layout calculation
+  el.style.visibility = 'hidden';
+  const cardWidth = el.offsetWidth;
+  const cardHeight = el.offsetHeight;
+  el.style.visibility = 'visible';
+
   const rect = anchor?.getBoundingClientRect();
   let top, right;
+
   if (rect) {
+    // Prefer placing below the anchor
     top = rect.bottom + 8;
     right = window.innerWidth - rect.right;
-    // keep card within viewport
-    if (top + cardHeight > window.innerHeight - margin) top = rect.top - cardHeight - 8;
-    top = Math.max(margin, top);
-    // ensure card left edge doesn't go off-screen: right <= innerWidth - cardWidth - margin
-    right = Math.min(right, window.innerWidth - cardWidth - margin);
+
+    // Check if it would go below viewport
+    if (top + cardHeight > window.innerHeight - margin) {
+      // Try placing above the anchor instead
+      top = rect.top - cardHeight - 8;
+      // If still doesn't fit, constrain to viewport
+      if (top < margin) {
+        top = margin;
+        // If still too tall, allow overflow but cap at bottom
+        if (top + cardHeight > window.innerHeight - margin) {
+          // Let it overflow at the top rather than bottom (better UX)
+          top = window.innerHeight - cardHeight - margin;
+          if (top < margin) top = margin;
+        }
+      }
+    }
+
+    // Constrain horizontally
+    // Minimum right (don't go off right edge)
     right = Math.max(margin, right);
+    // Maximum right (don't go off left edge)
+    right = Math.min(right, window.innerWidth - cardWidth - margin);
   } else {
+    // Default to bottom-right if no anchor
     top = window.innerHeight - cardHeight - margin;
     right = margin;
+
+    // Ensure within viewport
+    top = Math.max(margin, top);
+    top = Math.min(top, window.innerHeight - cardHeight - margin);
+    right = Math.max(margin, right);
+    right = Math.min(right, window.innerWidth - cardWidth - margin);
   }
+
   el.style.top = `${top}px`;
   el.style.right = `${right}px`;
 }
@@ -300,8 +332,31 @@ function showPrompt(file, anchor) {
 function showPromptFixed(file) {
   removeOverlay();
   const el = buildOverlay(file);
-  el.style.cssText = 'position:fixed!important;display:block!important;bottom:16px;right:16px;';
   document.body.appendChild(el);
+
+  // Use fixed positioning so no overflow:hidden ancestor can clip us
+  el.style.cssText = 'position:fixed!important;display:block!important;';
+
+  // Get actual dimensions from the element since CSS may affect size
+  // Force layout calculation
+  const margin = 16;
+  el.style.visibility = 'hidden';
+  const cardWidth = el.offsetWidth;
+  const cardHeight = el.offsetHeight;
+  el.style.visibility = 'visible';
+
+  // Default to bottom-right
+  let top = window.innerHeight - cardHeight - margin;
+  let right = margin;
+
+  // Ensure within viewport
+  top = Math.max(margin, top);
+  top = Math.min(top, window.innerHeight - cardHeight - margin);
+  right = Math.max(margin, right);
+  right = Math.min(right, window.innerWidth - cardWidth - margin);
+
+  el.style.top = `${top}px`;
+  el.style.right = `${right}px`;
 }
 
 function buildOverlay(file) {
@@ -313,7 +368,7 @@ function buildOverlay(file) {
       <div class="mdit-header">
         <span class="mdit-logo">M↓</span>
         <div class="mdit-title">
-          <strong>MarkItDown Converter</strong>
+          <strong>LLM Friendly</strong>
           <span class="mdit-fname" title="${esc(file.name)}">${esc(file.name)}</span>
         </div>
         <button class="mdit-close" aria-label="Close">✕</button>
@@ -432,7 +487,7 @@ async function runConversion(file, card) {
         sourceUrl: location.href,
       });
     } catch (err) {
-      console.error('[MarkItDown] Failed to save to history:', err);
+      console.error('[LLM Friendly] Failed to save to history:', err);
       // Non-critical - don't show error to user
     }
   } catch (err) {
@@ -506,7 +561,7 @@ async function doSave(file, card) {
     if (err.message?.includes('Extension context invalidated')) {
       showContextError(card);
     } else {
-      console.error('[MarkItDown] Save failed:', err);
+      console.error('[LLM Friendly] Save failed:', err);
       flashBtn(card.querySelector('.mdit-save'), '❌ Failed', '💾 Save .md');
     }
   }
