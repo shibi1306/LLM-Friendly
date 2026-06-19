@@ -19,9 +19,9 @@ const SETTINGS_KEY = 'settings';
 const DEFAULT_SETTINGS = {
   outputSubfolder: 'LLM Friendly',
   enabledSites: {
-    chatgpt: true, claude: true, gemini: true, copilot: true,
-    mistral: true, poe: true, deepseek: true, grok: true,
-    huggingface: true, perplexity: true,
+    chatgpt: true, claude: true, copilot: true,
+    poe: true, deepseek: true, grok: true,
+    perplexity: true,
   },
   autoConvert: false,
   customSites: [],

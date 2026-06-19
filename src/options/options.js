@@ -32,13 +32,10 @@ async function sendMessageWithRetry(message, maxAttempts = 3) {
 const SITES = [
   { key: 'chatgpt',     label: 'ChatGPT' },
   { key: 'claude',      label: 'Claude' },
-  { key: 'gemini',      label: 'Gemini' },
   { key: 'copilot',     label: 'Copilot' },
-  { key: 'mistral',     label: 'Mistral' },
   { key: 'poe',         label: 'Poe' },
   { key: 'deepseek',    label: 'DeepSeek' },
   { key: 'grok',        label: 'Grok' },
-  { key: 'huggingface', label: 'HuggingFace' },
   { key: 'perplexity',  label: 'Perplexity' },
 ];
 
