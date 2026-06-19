@@ -17,12 +17,11 @@ const SITE_INPUT_SELECTORS = {
   'grok.com': 'textarea, [contenteditable="true"]',
   'x.com': 'textarea, [contenteditable="true"]',
   'huggingface.co': 'textarea, [contenteditable="true"]',
-  'perplexity.ai': 'textarea, [contenteditable="true"]',
+  'perplexity.ai': 'div[contenteditable="true"], textarea',
 };
 
 const attachedInputs = new WeakSet();
 let convertedContent = null;
-let isEnabled = true;
 let currentSiteEnabled = true;
 let mutationObserver = null;
 let dragListenerAdded = false;
@@ -34,14 +33,14 @@ let isRedispatchingPaste = false; // guard to prevent intercepting our own synth
 
 async function init() {
   console.log('[LLM Friendly] Initializing on', window.location.hostname);
+
+  // Establish a persistent port to the service worker so it does not go
+  // idle while the content script is active. The port auto-reconnects
+  // if the SW restarts.
+  keepSwAlive();
+
   const settings = await getSettings();
   console.log('[LLM Friendly] Settings:', settings);
-
-  isEnabled = settings.enabled !== false;
-  if (!isEnabled) {
-    console.log('[LLM Friendly] Extension globally disabled');
-    return;
-  }
 
   // Check if current site is enabled
   currentSiteEnabled = await isSiteEnabled(settings);
@@ -67,10 +66,9 @@ async function init() {
 }
 
 async function handleSettingsUpdate(settings) {
-  isEnabled = settings.enabled !== false;
   const siteEnabled = await isSiteEnabled(settings);
 
-  if (!isEnabled || !siteEnabled) {
+  if (!siteEnabled) {
     // Disable extension on this tab
     currentSiteEnabled = false;
     cleanup();
@@ -165,7 +163,7 @@ function attachListener(input) {
 
 async function onFileInputChange(e) {
   console.log('[LLM Friendly] File input change event:', e.target.files?.[0]?.name);
-  if (!isEnabled || !currentSiteEnabled) {
+  if (!currentSiteEnabled) {
     console.log('[LLM Friendly] Extension disabled for this site');
     return;
   }
@@ -185,7 +183,7 @@ async function onFileInputChange(e) {
 function setupDragDetection() {
   if (dragListenerAdded) return;
   document.addEventListener('drop', e => {
-    if (!isEnabled || !currentSiteEnabled) return;
+    if (!currentSiteEnabled) return;
     const file = e.dataTransfer?.files?.[0];
     if (!file || !isSupported(file.name)) return;
     console.log('[LLM Friendly] File dropped:', file.name);
@@ -205,7 +203,7 @@ function setupPasteDetection() {
   window.addEventListener('paste', (e) => {
     // Don't intercept our own re-dispatched paste events
     if (isRedispatchingPaste) return;
-    if (!isEnabled || !currentSiteEnabled) return;
+    if (!currentSiteEnabled) return;
 
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -276,13 +274,21 @@ function showPrompt(file, anchor) {
   // Use fixed positioning so no overflow:hidden ancestor can clip us
   el.style.cssText = 'position:fixed!important;display:block!important;';
   const margin = 16;
+  const vpHeight = window.innerHeight;
+  const vpWidth = window.innerWidth;
 
-  // Get actual dimensions from the element since CSS may affect size
-  // Force layout calculation
-  el.style.visibility = 'hidden';
-  const cardWidth = el.offsetWidth;
-  const cardHeight = el.offsetHeight;
-  el.style.visibility = 'visible';
+  // Constrain card size to fit within viewport (with margins)
+  const maxCardHeight = vpHeight - margin * 2;
+  const maxCardWidth = vpWidth - margin * 2;
+  const card = el.querySelector('.mdit-card');
+  if (card) {
+    card.style.maxHeight = `${maxCardHeight}px`;
+    card.style.overflowY = 'auto';
+    card.style.maxWidth = `${maxCardWidth}px`;
+    card.style.width = 'auto';
+    card.style.overflowX = 'hidden';
+    card.style.wordBreak = 'break-word';
+  }
 
   const rect = anchor?.getBoundingClientRect();
   let top, right;
@@ -290,39 +296,30 @@ function showPrompt(file, anchor) {
   if (rect) {
     // Prefer placing below the anchor
     top = rect.bottom + 8;
-    right = window.innerWidth - rect.right;
+    right = vpWidth - rect.right;
 
     // Check if it would go below viewport
-    if (top + cardHeight > window.innerHeight - margin) {
+    if (top + maxCardHeight > vpHeight - margin) {
       // Try placing above the anchor instead
-      top = rect.top - cardHeight - 8;
-      // If still doesn't fit, constrain to viewport
-      if (top < margin) {
-        top = margin;
-        // If still too tall, allow overflow but cap at bottom
-        if (top + cardHeight > window.innerHeight - margin) {
-          // Let it overflow at the top rather than bottom (better UX)
-          top = window.innerHeight - cardHeight - margin;
-          if (top < margin) top = margin;
-        }
+      top = Math.max(margin, rect.top - maxCardHeight - 8);
+      // If still doesn't fit above either, constrain to bottom of viewport
+      if (top + maxCardHeight > vpHeight - margin) {
+        top = vpHeight - maxCardHeight - margin;
       }
     }
 
-    // Constrain horizontally
-    // Minimum right (don't go off right edge)
+    // Constrain horizontally — keep card fully within viewport
     right = Math.max(margin, right);
-    // Maximum right (don't go off left edge)
-    right = Math.min(right, window.innerWidth - cardWidth - margin);
+    right = Math.min(right, vpWidth - maxCardWidth - margin);
   } else {
     // Default to bottom-right if no anchor
-    top = window.innerHeight - cardHeight - margin;
+    top = vpHeight - maxCardHeight - margin;
     right = margin;
 
     // Ensure within viewport
     top = Math.max(margin, top);
-    top = Math.min(top, window.innerHeight - cardHeight - margin);
     right = Math.max(margin, right);
-    right = Math.min(right, window.innerWidth - cardWidth - margin);
+    right = Math.min(right, vpWidth - maxCardWidth - margin);
   }
 
   el.style.top = `${top}px`;
@@ -337,23 +334,31 @@ function showPromptFixed(file) {
   // Use fixed positioning so no overflow:hidden ancestor can clip us
   el.style.cssText = 'position:fixed!important;display:block!important;';
 
-  // Get actual dimensions from the element since CSS may affect size
-  // Force layout calculation
   const margin = 16;
-  el.style.visibility = 'hidden';
-  const cardWidth = el.offsetWidth;
-  const cardHeight = el.offsetHeight;
-  el.style.visibility = 'visible';
+  const vpHeight = window.innerHeight;
+  const vpWidth = window.innerWidth;
 
-  // Default to bottom-right
-  let top = window.innerHeight - cardHeight - margin;
+  // Constrain card size to fit within viewport (with margins)
+  const maxCardHeight = vpHeight - margin * 2;
+  const maxCardWidth = vpWidth - margin * 2;
+  const card = el.querySelector('.mdit-card');
+  if (card) {
+    card.style.maxHeight = `${maxCardHeight}px`;
+    card.style.overflowY = 'auto';
+    card.style.maxWidth = `${maxCardWidth}px`;
+    card.style.width = 'auto';
+    card.style.overflowX = 'hidden';
+    card.style.wordBreak = 'break-word';
+  }
+
+  // Bottom-right positioning
+  let top = vpHeight - maxCardHeight - margin;
   let right = margin;
 
   // Ensure within viewport
   top = Math.max(margin, top);
-  top = Math.min(top, window.innerHeight - cardHeight - margin);
   right = Math.max(margin, right);
-  right = Math.min(right, window.innerWidth - cardWidth - margin);
+  right = Math.min(right, vpWidth - maxCardWidth - margin);
 
   el.style.top = `${top}px`;
   el.style.right = `${right}px`;
@@ -366,12 +371,11 @@ function buildOverlay(file) {
   el.innerHTML = `
     <div class="mdit-card">
       <div class="mdit-header">
-        <span class="mdit-logo">M↓</span>
+
         <div class="mdit-title">
           <strong>LLM Friendly</strong>
           <span class="mdit-fname" title="${esc(file.name)}">${esc(file.name)}</span>
         </div>
-        <button class="mdit-close" aria-label="Close">✕</button>
       </div>
 
       <div class="mdit-body mdit-prompt">
@@ -417,11 +421,6 @@ function buildOverlay(file) {
 
   const card = el.querySelector('.mdit-card');
 
-  // Close button — allow the original paste through, then remove overlay
-  el.querySelector('.mdit-close').onclick = () => {
-    allowOriginalPaste();
-    removeOverlay();
-  };
 
   // Skip button — allow the original paste through, then remove overlay
   el.querySelector('.mdit-skip').onclick = () => {
@@ -479,7 +478,7 @@ async function runConversion(file, card) {
     card.querySelector('#mdit-preview').textContent = preview;
 
     try {
-      await browser.runtime.sendMessage({
+      await sendMessageWithRetry({
         type: 'SAVE_CONVERTED',
         fileName: file.name.replace(/\.[^.]+$/, '') + '.md',
         sourceFileName: file.name,
@@ -489,6 +488,12 @@ async function runConversion(file, card) {
     } catch (err) {
       console.error('[LLM Friendly] Failed to save to history:', err);
       // Non-critical - don't show error to user
+    }
+
+    // Auto-hide overlay after 10 seconds
+    const root = card.closest('#mditdown-root');
+    if (root) {
+      root.dataset.hideTimer = setTimeout(() => removeOverlay(), 10000);
     }
   } catch (err) {
     hide(card.querySelector('.mdit-loading'));
@@ -510,38 +515,105 @@ function doInsert(card) {
 
   const hostname = location.hostname;
   const selector = SITE_INPUT_SELECTORS[hostname] || '[contenteditable="true"], textarea';
-  const input = document.querySelector(selector);
+
+  // Prefer the currently focused element — the user was likely just typing
+  // in the chat input before clicking Insert.
+  let input = document.activeElement;
+  if (
+    !input ||
+    input === document.body ||
+    (!input.matches('textarea, input, [contenteditable]') && !input.closest('[contenteditable]'))
+  ) {
+    input = document.querySelector(selector);
+  }
 
   if (!input) {
-    navigator.clipboard.writeText(convertedContent);
-    flashBtn(card.querySelector('.mdit-insert'), '📋 Copied!', '✏️ Insert');
+    // No known input found — copy to clipboard as fallback
+    fallbackToClipboard(card);
     return;
   }
 
-  if (input.tagName === 'TEXTAREA') {
-    const s = input.selectionStart;
-    input.value = input.value.slice(0, s) + convertedContent + input.value.slice(input.selectionEnd);
-    input.selectionStart = input.selectionEnd = s + convertedContent.length;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  } else {
-    input.focus();
-    const sel = window.getSelection();
-    if (sel.rangeCount) {
-      const range = sel.getRangeAt(0);
-      range.deleteContents();
-      const node = document.createTextNode(convertedContent);
-      range.insertNode(node);
-      range.setStartAfter(node);
-      range.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    } else {
-      document.execCommand('insertText', false, convertedContent);
-    }
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+  // If the matched element is inside a contenteditable (e.g. a <p> or <div>),
+  // use the top-level contenteditable ancestor as the target.
+  if (!input.hasAttribute('contenteditable') && input.closest('[contenteditable]')) {
+    input = input.closest('[contenteditable]');
   }
 
-  flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
+  input.focus();
+  // Small delay so the editor framework registers the focus
+  setTimeout(() => {
+    if (input.tagName === 'TEXTAREA') {
+      const s = input.selectionStart;
+      input.value = input.value.slice(0, s) + convertedContent + input.value.slice(input.selectionEnd);
+      input.selectionStart = input.selectionEnd = s + convertedContent.length;
+      fireInputEvent(input);
+      flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
+      return;
+    }
+
+    // ── Contenteditable ──────────────────────────────────────────
+    // 1) Copy to clipboard first so both execCommand and the paste
+    //    fallback have access to the data.
+    navigator.clipboard.writeText(convertedContent).then(() => {
+      // 2) Try execCommand('insertText') — generates a 'beforeinput'
+      //    event with inputType='insertText' that ProseMirror and
+      //    other editors listen to natively.
+      let inserted = false;
+      try {
+        inserted = document.execCommand('insertText', false, convertedContent);
+      } catch {
+        // execCommand threw — fall through to paste
+      }
+
+      if (inserted) {
+        fireInputEvent(input);
+        flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
+        return;
+      }
+
+      // 3) execCommand didn't take — dispatch a synthetic paste event.
+      //    Most editors (Slate, Draft.js, plain contenteditable) handle
+      //    paste events when the clipboard has the data.
+      try {
+        const dt = new DataTransfer();
+        dt.setData('text/plain', convertedContent);
+        const ev = new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: dt,
+        });
+        input.dispatchEvent(ev);
+        fireInputEvent(input);
+        flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
+      } catch {
+        // Everything failed — user can paste manually
+        flashBtn(card.querySelector('.mdit-insert'), '📋 Copied!', '✏️ Insert');
+      }
+    }).catch(() => {
+      // Clipboard write denied — try execCommand anyway (data-less)
+      try {
+        document.execCommand('insertText', false, convertedContent);
+        fireInputEvent(input);
+        flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
+      } catch {
+        flashBtn(card.querySelector('.mdit-insert'), '📋 Copied!', '✏️ Insert');
+      }
+    });
+  }, 50);
+}
+
+function fireInputEvent(el) {
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  // Also dispatch 'change' for textareas that may listen on it
+  if (el.tagName === 'TEXTAREA') {
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+function fallbackToClipboard(card) {
+  navigator.clipboard.writeText(convertedContent).then(() => {
+    flashBtn(card.querySelector('.mdit-insert'), '📋 Copied!', '✏️ Insert');
+  });
 }
 
 async function doSave(file, card) {
@@ -549,7 +621,7 @@ async function doSave(file, card) {
   const mdName = file.name.replace(/\.[^.]+$/, '') + '.md';
 
   try {
-    const res = await browser.runtime.sendMessage({
+    const res = await sendMessageWithRetry({
       type: 'DOWNLOAD_FILE',
       content: convertedContent,
       fileName: mdName,
@@ -558,7 +630,7 @@ async function doSave(file, card) {
       flashBtn(card.querySelector('.mdit-save'), '✅ Saved!', '💾 Save .md');
     }
   } catch (err) {
-    if (err.message?.includes('Extension context invalidated')) {
+    if (err.message?.includes('Extension context invalidated') || err.message?.includes('context invalidated')) {
       showContextError(card);
     } else {
       console.error('[LLM Friendly] Save failed:', err);
@@ -588,11 +660,74 @@ function showContextError(card) {
 }
 
 function removeOverlay() {
-  document.getElementById('mditdown-root')?.remove();
+  const root = document.getElementById('mditdown-root');
+  if (root) {
+    if (root.dataset.hideTimer) {
+      clearTimeout(Number(root.dataset.hideTimer));
+      delete root.dataset.hideTimer;
+    }
+    root.remove();
+  }
   convertedContent = null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Send a message to the background service worker with automatic retry
+ * on service worker restart / context invalidation.
+ */
+async function sendMessageWithRetry(message, maxAttempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await browser.runtime.sendMessage(message);
+    } catch (err) {
+      lastError = err;
+      const msg = err.message || '';
+      // Only retry on transient service-worker-related failures
+      if (
+        msg.includes('Extension context invalidated') ||
+        msg.includes('context invalidated') ||
+        msg.includes('Could not establish connection') ||
+        msg.includes('Receiving end does not exist')
+      ) {
+        console.warn(`[LLM Friendly] sendMessage attempt ${attempt}/${maxAttempts} failed (SW restart):`, msg);
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 500 * attempt));
+          continue;
+        }
+      }
+      // Non-retryable or last attempt — throw
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * Keep a persistent port open to the service worker so Chrome won't
+ * terminate it during idle periods. Automatically reconnects when
+ * the SW restarts.
+ */
+function keepSwAlive() {
+  let reconnectTimer = null;
+
+  function connect() {
+    try {
+      const port = browser.runtime.connect({ name: 'cs-keepalive' });
+      port.onDisconnect.addListener(() => {
+        // SW terminated or restarted — reconnect after a short delay
+        reconnectTimer = setTimeout(connect, 500);
+      });
+    } catch {
+      // Extension context not ready yet — retry shortly
+      reconnectTimer = setTimeout(connect, 1000);
+    }
+  }
+
+  connect();
+}
 
 function esc(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -611,9 +746,14 @@ function fileLabel(name) {
 }
 
 async function getSettings() {
-  return new Promise(resolve => {
-    browser.runtime.sendMessage({ type: 'GET_SETTINGS' }, res => resolve(res || {}));
-  });
+  // Use sendMessageWithRetry instead of callback pattern — the callback form
+  // silently hangs in MV3 if the service worker needs to start up.
+  try {
+    return await sendMessageWithRetry({ type: 'GET_SETTINGS' });
+  } catch {
+    console.warn('[LLM Friendly] Failed to get settings from SW, using defaults');
+    return {};
+  }
 }
 
 // Handle INSERT_TEXT messages from the popup

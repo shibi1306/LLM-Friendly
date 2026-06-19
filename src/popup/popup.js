@@ -5,6 +5,34 @@ import './popup.css';
 let currentMd = null;
 let currentFileName = null;
 
+// ── Retry helper ────────────────────────────────────────────────────────
+
+async function sendMessageWithRetry(message, maxAttempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await browser.runtime.sendMessage(message);
+    } catch (err) {
+      lastError = err;
+      const msg = err.message || '';
+      if (
+        msg.includes('Extension context invalidated') ||
+        msg.includes('context invalidated') ||
+        msg.includes('Could not establish connection') ||
+        msg.includes('Receiving end does not exist')
+      ) {
+        console.warn(`[LLM Friendly] sendMessage attempt ${attempt}/${maxAttempts} failed (SW restart):`, msg);
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 500 * attempt));
+          continue;
+        }
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -18,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('clearAllBtn').onclick = async () => {
     if (confirm('Clear all conversion history?')) {
-      await browser.runtime.sendMessage({ type: 'CLEAR_HISTORY' });
+      await sendMessageWithRetry({ type: 'CLEAR_HISTORY' });
       renderHistory();
     }
   };
@@ -80,14 +108,14 @@ async function handleFile(file) {
     document.getElementById('convResult').style.display = 'block';
     document.getElementById('resultFile').textContent = currentFileName;
 
-    // Save to history
-    await browser.runtime.sendMessage({
+    // Save to history (best-effort)
+    sendMessageWithRetry({
       type: 'SAVE_CONVERTED',
       fileName: currentFileName,
       sourceFileName: file.name,
       markdown: md,
       sourceUrl: 'popup',
-    });
+    }).then(() => renderHistory()).catch(() => {});
 
     renderHistory();
   } catch (err) {
@@ -108,28 +136,50 @@ function copyMd() {
 
 async function saveMd() {
   if (!currentMd || !currentFileName) return;
-  await browser.runtime.sendMessage({
-    type: 'DOWNLOAD_FILE',
-    content: currentMd,
-    fileName: currentFileName,
-  });
-  flash('qSaveBtn', '✅ Saved!', '💾 Save .md');
+  try {
+    await sendMessageWithRetry({
+      type: 'DOWNLOAD_FILE',
+      content: currentMd,
+      fileName: currentFileName,
+    });
+    flash('qSaveBtn', '✅ Saved!', '💾 Save .md');
+  } catch (err) {
+    console.error('[LLM Friendly] Save failed:', err);
+    flash('qSaveBtn', '❌ Failed', '💾 Save .md');
+  }
 }
 
 async function insertMd() {
   if (!currentMd) return;
   // Get the active tab and send a message to insert
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) {
-    browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: currentMd });
+  try {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: currentMd });
+    }
+    flash('qInsertBtn', '✅ Sent!', '✏️ Insert');
+  } catch (err) {
+    // Content script may not be loaded on the current tab
+    // Fall back to clipboard
+    try {
+      await navigator.clipboard.writeText(currentMd);
+      flash('qInsertBtn', '📋 Copied!', '✏️ Insert');
+    } catch {
+      flash('qInsertBtn', '❌ Failed', '✏️ Insert');
+    }
   }
-  flash('qInsertBtn', '✅ Sent!', '✏️ Insert');
 }
 
 // ── History rendering ──────────────────────────────────────────────────
 
 async function renderHistory() {
-  const history = await browser.runtime.sendMessage({ type: 'GET_HISTORY' }) || [];
+  let history;
+  try {
+    history = await sendMessageWithRetry({ type: 'GET_HISTORY' }) || [];
+  } catch {
+    history = [];
+  }
+
   const list = document.getElementById('historyList');
   const empty = document.getElementById('emptyState');
 
@@ -176,7 +226,11 @@ function buildHistItem(item) {
   `;
 
   el.querySelector('.del-btn').onclick = async () => {
-    await browser.runtime.sendMessage({ type: 'DELETE_HISTORY_ITEM', id: item.id });
+    try {
+      await sendMessageWithRetry({ type: 'DELETE_HISTORY_ITEM', id: item.id });
+    } catch {
+      // Silently fail — item will reappear on next renderHistory
+    }
     el.remove();
     const remaining = document.querySelectorAll('.hist-item').length;
     if (remaining === 0) {
@@ -190,19 +244,33 @@ function buildHistItem(item) {
   };
 
   el.querySelector('.hist-save').onclick = async () => {
-    await browser.runtime.sendMessage({
-      type: 'DOWNLOAD_FILE',
-      content: item.markdown,
-      fileName: item.fileName,
-    });
-    flash2(el.querySelector('.hist-save'), '✅ Saved!', '💾 Save');
+    try {
+      await sendMessageWithRetry({
+        type: 'DOWNLOAD_FILE',
+        content: item.markdown,
+        fileName: item.fileName,
+      });
+      flash2(el.querySelector('.hist-save'), '✅ Saved!', '💾 Save');
+    } catch {
+      flash2(el.querySelector('.hist-save'), '❌ Failed', '💾 Save');
+    }
   };
 
   el.querySelector('.hist-insert').onclick = async () => {
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: item.markdown });
-      flash2(el.querySelector('.hist-insert'), '✅ Sent!', '✏️ Insert');
+    try {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        await browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: item.markdown });
+        flash2(el.querySelector('.hist-insert'), '✅ Sent!', '✏️ Insert');
+      }
+    } catch {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(item.markdown);
+        flash2(el.querySelector('.hist-insert'), '📋 Copied!', '✏️ Insert');
+      } catch {
+        flash2(el.querySelector('.hist-insert'), '❌ Failed', '✏️ Insert');
+      }
     }
   };
 

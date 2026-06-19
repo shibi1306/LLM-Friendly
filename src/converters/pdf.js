@@ -4,14 +4,14 @@ let workerConfigured = false;
 
 function configurePdfWorker() {
   if (workerConfigured) return;
-  
+
   // Reference the bundled worker file as an extension resource.
-  // In Firefox content scripts, loading this as a Worker usually fails 
-  // due to security policies, which causes PDF.js to automatically 
-  // fall back to the 'fake worker' (main thread). We must set this 
+  // In Firefox content scripts, loading this as a Worker usually fails
+  // due to security policies, which causes PDF.js to automatically
+  // fall back to the 'fake worker' (main thread). We must set this
   // to avoid the "No workerSrc specified" error.
   pdfjsLib.GlobalWorkerOptions.workerSrc = browser.runtime.getURL('pdf.worker.js');
-  
+
   workerConfigured = true;
 }
 

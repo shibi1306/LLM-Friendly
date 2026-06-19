@@ -38,13 +38,11 @@ a { color: var(--brand); }
 }
 
 .header-logo {
-  font-size: 26px;
-  font-weight: 800;
-  background: rgba(255,255,255,0.15);
-  padding: 6px 12px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
-  letter-spacing: -0.5px;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 .page-header h1 { font-size: 20px; font-weight: 700; }

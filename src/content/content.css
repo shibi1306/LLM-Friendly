@@ -4,8 +4,9 @@
 #mditdown-root {
   all: initial;
   display: block !important;
-  /* position/top/right set by JS */
-  z-index: 2147483647;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  isolation: isolate;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', sans-serif;
 }
 
@@ -51,16 +52,6 @@
   color: #fff;
 }
 
-.mdit-logo {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  flex-shrink: 0;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.22);
-  padding: 2px 5px;
-  border-radius: 5px;
-}
 
 .mdit-title {
   flex: 1;
@@ -169,10 +160,9 @@
   padding: 10px 13px;
   font-size: 11.5px;
   color: #4a3f6b;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
   max-height: 120px;
-  overflow-y: auto;
+  overflow: auto;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   margin-bottom: 12px;
   line-height: 1.65;

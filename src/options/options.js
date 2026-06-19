@@ -1,6 +1,34 @@
 import '../polyfill.js';
 import './options.css';
 
+// ── Retry helper ────────────────────────────────────────────────────────
+
+async function sendMessageWithRetry(message, maxAttempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await browser.runtime.sendMessage(message);
+    } catch (err) {
+      lastError = err;
+      const msg = err.message || '';
+      if (
+        msg.includes('Extension context invalidated') ||
+        msg.includes('context invalidated') ||
+        msg.includes('Could not establish connection') ||
+        msg.includes('Receiving end does not exist')
+      ) {
+        console.warn(`[LLM Friendly] sendMessage attempt ${attempt}/${maxAttempts} failed (SW restart):`, msg);
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, 500 * attempt));
+          continue;
+        }
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
 const SITES = [
   { key: 'chatgpt',     label: 'ChatGPT' },
   { key: 'claude',      label: 'Claude' },
@@ -17,7 +45,7 @@ const SITES = [
 let settings = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-  settings = await browser.runtime.sendMessage({ type: 'GET_SETTINGS' });
+  settings = await sendMessageWithRetry({ type: 'GET_SETTINGS' });
 
   renderSiteGrid();
   renderCustomSites();
@@ -63,7 +91,6 @@ function renderSiteGrid() {
 
 function loadUI() {
   document.getElementById('subfolderInput').value = settings.outputSubfolder || 'LLM Friendly';
-  document.getElementById('chkEnabled').checked = settings.enabled !== false;
   document.getElementById('chkAutoConvert').checked = !!settings.autoConvert;
   // History limit slider
   const historyLimit = settings.historyLimit ?? 50;
@@ -72,14 +99,13 @@ function loadUI() {
 }
 
 async function loadHistoryCount() {
-  const history = await browser.runtime.sendMessage({ type: 'GET_HISTORY' }) || [];
+  const history = await sendMessageWithRetry({ type: 'GET_HISTORY' }) || [];
   document.getElementById('historyCount').textContent =
     `${history.length} conversion${history.length !== 1 ? 's' : ''} stored locally`;
 }
 
 async function save() {
   const subfolder = document.getElementById('subfolderInput').value.trim() || 'LLM Friendly';
-  const enabled = document.getElementById('chkEnabled').checked;
   const autoConvert = document.getElementById('chkAutoConvert').checked;
   const historyLimit = parseInt(document.getElementById('historyLimit').value, 10);
 
@@ -91,14 +117,13 @@ async function save() {
   const newSettings = {
     ...settings,
     outputSubfolder: subfolder,
-    enabled,
     autoConvert,
     enabledSites,
     customSites: settings.customSites || [],
     historyLimit
   };
 
-  await browser.runtime.sendMessage({ type: 'SAVE_SETTINGS', settings: newSettings });
+  await sendMessageWithRetry({ type: 'SAVE_SETTINGS', settings: newSettings });
   settings = newSettings;
 
   const status = document.getElementById('saveStatus');
@@ -120,7 +145,7 @@ async function save() {
 
 async function clearHistory() {
   if (!confirm('Clear all conversion history? This cannot be undone.')) return;
-  await browser.runtime.sendMessage({ type: 'CLEAR_HISTORY' });
+  await sendMessageWithRetry({ type: 'CLEAR_HISTORY' });
   loadHistoryCount();
   const status = document.getElementById('saveStatus');
   status.textContent = '🗑️ History cleared';
