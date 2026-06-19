@@ -11,6 +11,7 @@ const SITE_INPUT_SELECTORS = {
   'copilot.microsoft.com': '#userInput, [contenteditable="true"]',
   'www.bing.com': '#searchbox, [contenteditable="true"]',
   'chat.mistral.ai': 'textarea, [contenteditable="true"]',
+  'mistral.ai': 'textarea, [contenteditable="true"]',
   'poe.com': 'textarea[placeholder], [contenteditable="true"]',
   'chat.deepseek.com': 'textarea, [contenteditable="true"]',
   'aistudio.google.com': 'textarea, [contenteditable="true"]',
@@ -23,6 +24,7 @@ const SITE_INPUT_SELECTORS = {
 const attachedInputs = new WeakSet();
 let convertedContent = null;
 let currentSiteEnabled = true;
+let autoConvertEnabled = false;
 let mutationObserver = null;
 let dragListenerAdded = false;
 
@@ -44,7 +46,8 @@ async function init() {
 
   // Check if current site is enabled
   currentSiteEnabled = await isSiteEnabled(settings);
-  console.log('[LLM Friendly] Site enabled:', currentSiteEnabled);
+  autoConvertEnabled = settings.autoConvert === true;
+  console.log('[LLM Friendly] Site enabled:', currentSiteEnabled, 'Auto-convert:', autoConvertEnabled);
   if (!currentSiteEnabled) {
     console.log('[LLM Friendly] Extension disabled for this site');
     return;
@@ -67,6 +70,7 @@ async function init() {
 
 async function handleSettingsUpdate(settings) {
   const siteEnabled = await isSiteEnabled(settings);
+  autoConvertEnabled = settings.autoConvert === true;
 
   if (!siteEnabled) {
     // Disable extension on this tab
@@ -106,6 +110,7 @@ async function isSiteEnabled(settings) {
     'copilot.microsoft.com': 'copilot',
     'www.bing.com': 'copilot',
     'chat.mistral.ai': 'mistral',
+    'mistral.ai': 'mistral',
     'poe.com': 'poe',
     'chat.deepseek.com': 'deepseek',
     'aistudio.google.com': 'gemini',
@@ -128,37 +133,44 @@ async function isSiteEnabled(settings) {
 // ── File input detection ─────────────────────────────────────────────
 
 function watchFileInputs() {
-  // Initial scan for existing file inputs
-  const initialInputs = document.querySelectorAll('input[type="file"]');
-  console.log(`[LLM Friendly] Found ${initialInputs.length} file inputs on page load`);
-  initialInputs.forEach(attachListener);
+  // Use event delegation with capture — catches change events from ANY
+  // file input, including ones added dynamically after page load,
+  // recycled across navigations, or hidden in tooltip/modal containers
+  // that our MutationObserver may miss.
+  document.addEventListener('change', (e) => {
+    // Fast-path: only respond to native file inputs
+    const target = e.target;
+    if (target.tagName !== 'INPUT' || target.type !== 'file') return;
 
-  // Watch for new file inputs being added to DOM
+    // Ignore if we've already handled this particular input and dismissed
+    if (attachedInputs.has(target)) {
+      // Still fire — the user may have selected a different file
+    } else {
+      attachedInputs.add(target);
+    }
+
+    onFileInputChange(e);
+  }, { capture: true });
+
+  // Also watch via MutationObserver for early logging and input registration
+  // (not strictly needed for functionality, but helps debug)
+  if (mutationObserver) mutationObserver.disconnect();
   mutationObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeType !== 1) continue;
         if (node.matches?.('input[type="file"]')) {
-          console.log('[LLM Friendly] Detected new file input:', node);
-          attachListener(node);
+          console.log('[LLM Friendly] Detected file input via observer:', node);
         }
         const inputs = node.querySelectorAll?.('input[type="file"]');
-        if (inputs && inputs.length > 0) {
-          console.log(`[LLM Friendly] Detected ${inputs.length} file inputs in added node`);
-          inputs.forEach(attachListener);
+        if (inputs?.length) {
+          console.log(`[LLM Friendly] Detected ${inputs.length} file input(s)`);
         }
       }
     }
   });
   mutationObserver.observe(document.documentElement, { childList: true, subtree: true });
-  console.log('[LLM Friendly] MutationObserver started');
-}
-
-function attachListener(input) {
-  if (attachedInputs.has(input)) return;
-  attachedInputs.add(input);
-  input.addEventListener('change', onFileInputChange);
-  console.log('[LLM Friendly] Attached change listener to file input');
+  console.log('[LLM Friendly] File input detection active (delegation + observer)');
 }
 
 async function onFileInputChange(e) {
@@ -176,8 +188,14 @@ async function onFileInputChange(e) {
     console.log('[LLM Friendly] File type not supported:', file.name);
     return;
   }
-  console.log('[LLM Friendly] Showing prompt for file:', file.name);
-  showPrompt(file, e.target);
+
+  if (autoConvertEnabled) {
+    console.log('[LLM Friendly] Auto-converting file:', file.name);
+    startConversion(file);
+  } else {
+    console.log('[LLM Friendly] Showing prompt for file:', file.name);
+    showPrompt(file, e.target);
+  }
 }
 
 function setupDragDetection() {
@@ -188,7 +206,13 @@ function setupDragDetection() {
     if (!file || !isSupported(file.name)) return;
     console.log('[LLM Friendly] File dropped:', file.name);
     // Give the page its drop event first
-    setTimeout(() => showPromptFixed(file), 250);
+    setTimeout(() => {
+      if (autoConvertEnabled) {
+        startConversion(file);
+      } else {
+        showPromptFixed(file);
+      }
+    }, 250);
   }, { capture: true, passive: true });
   dragListenerAdded = true;
   console.log('[LLM Friendly] Drag-drop detection enabled');
@@ -223,8 +247,15 @@ function setupPasteDetection() {
           e.preventDefault();
           e.stopImmediatePropagation();
 
-          // Show conversion prompt immediately
-          showPromptFixed(file);
+          if (autoConvertEnabled) {
+            // Auto-convert: no prompt, don't need to re-dispatch
+            pendingPasteFile = null;
+            pendingPasteTarget = null;
+            startConversion(file);
+          } else {
+            // Show conversion prompt immediately
+            showPromptFixed(file);
+          }
           break;
         }
       }
@@ -293,7 +324,7 @@ function showPrompt(file, anchor) {
   const rect = anchor?.getBoundingClientRect();
   let top, right;
 
-  if (rect) {
+  if (rect && rect.width > 0 && rect.height > 0 && rect.top < vpHeight && rect.left < vpWidth) {
     // Prefer placing below the anchor
     top = rect.bottom + 8;
     right = vpWidth - rect.right;
@@ -457,6 +488,34 @@ function show(el, displayValue = 'flex') {
 function hide(el) {
   el.classList.add('mdit-hidden');
   el.style.removeProperty('display');
+}
+
+/**
+ * Build the overlay and start conversion immediately (no prompt).
+ * Used when auto-convert is enabled.
+ */
+function startConversion(file) {
+  removeOverlay();
+  const el = buildOverlay(file);
+  document.body.appendChild(el);
+  el.style.cssText = 'position:fixed!important;display:block!important;';
+
+  const margin = 16;
+  const vpHeight = window.innerHeight;
+  const vpWidth = window.innerWidth;
+  const card = el.querySelector('.mdit-card');
+  if (card) {
+    card.style.maxHeight = `${vpHeight - margin * 2}px`;
+    card.style.overflowY = 'auto';
+    card.style.maxWidth = `${vpWidth - margin * 2}px`;
+  }
+
+  // Position top-right
+  el.style.top = `${margin}px`;
+  el.style.right = `${margin}px`;
+
+  // Start conversion directly (skips the prompt panel)
+  runConversion(file, card);
 }
 
 async function runConversion(file, card) {

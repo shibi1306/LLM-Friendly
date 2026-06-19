@@ -32,6 +32,7 @@
         "https://copilot.microsoft.com/*",
         "https://www.bing.com/chat*",
         "https://chat.mistral.ai/*",
+        "https://mistral.ai/*",
         "https://poe.com/*",
         "https://chat.deepseek.com/*",
         "https://aistudio.google.com/*",
