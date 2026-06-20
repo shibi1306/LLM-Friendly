@@ -1,5 +1,5 @@
 {
-  "name": "markitdown-browser-extension",
+  "name": "llm-friendly",
   "version": "1.0.0",
   "description": "Convert PDF, DOCX, XLSX, images and more to Markdown on any AI chat site",
   "scripts": {
@@ -9,7 +9,7 @@
     "safari:convert": "xcrun safari-web-extension-converter dist --app-name 'LLM Friendly' --bundle-identifier com.markitdown.converter --macos-only --force",
     "dev": "webpack --mode development --watch",
     "icons": "node scripts/generate-icons.js",
-    "package": "cd dist && zip -r ../markitdown-chrome.zip .",
+    "package": "cd dist && zip -r ../llm-friendly-chrome.zip .",
     "package:chrome": "npm run package"
   },
   "dependencies": {

@@ -1,182 +1,104 @@
 # LLM Friendly Browser Extension
 
-A **Chrome and Safari** extension that converts PDF, DOCX, XLSX, PPTX, HTML, CSV and more to Markdown — entirely in your browser, no server required.
-
-Works on ChatGPT, Claude, Gemini, Copilot, Mistral, Poe, DeepSeek, Grok, Perplexity, HuggingFace Chat, and more.
-
-## Browser Support
-
-| Browser | Status | Installation |
-|---------|--------|--------------|
-| **Chrome** | ✅ Fully supported | Load unpacked from `dist/` folder |
-| **Edge** | ✅ Fully supported | Same as Chrome (Chromium-based) |
-| **Brave** | ✅ Fully supported | Same as Chrome (Chromium-based) |
-| **Safari** | ✅ Fully supported | Requires Xcode conversion (macOS only) |
+Convert PDF, DOCX, XLSX, PPTX, HTML, CSV, plain text, JSON and image files to Markdown directly inside AI‑chat websites.
 
 ---
+
+## About
+LLM Friendly is a browser extension that helps Large Language Models process your documents more efficiently by converting PDFs, Word documents, Excel spreadsheets, PowerPoint presentations, HTML pages, CSV files, JSON data, plain text files, and images into structured Markdown or text directly inside AI chat platforms. 
+
+Many users regularly upload PDFs, images, spreadsheets, presentations, and other documents to Large Language Models for analysis, summarization, and question answering. However, these formats often contain complex layouts, formatting metadata, embedded objects, and structural overhead that consume additional tokens. By transforming documents into clean, AI-friendly Markdown, LLM Friendly removes unnecessary overhead and presents content in a format that LLMs can process more efficiently, allowing models to focus on the information that matters most while maximizing available context and reducing token consumption.
+
 
 ## Features
 
-- **Automatic detection** — watches for file attachment inputs on supported chat sites
-- **Conversion prompt** — shows a non-intrusive overlay asking if you want to convert
-- **Insert into chat** — injects the converted Markdown directly into the chat input
-- **Save to folder** — downloads `.md` files to a configurable subfolder in your Downloads directory
-- **Conversion history** — quickly re-copy or re-insert any previously converted file from the popup
-- **Quick Convert in popup** — convert any file without visiting a chat site via drag-and-drop
-- **Works offline** — all conversion happens locally, no data leaves your browser
-
-## Supported Formats
-
-| Format | How it's converted |
-|---|---|
-| PDF | Text extraction via PDF.js |
-| DOCX / DOC | HTML extraction via Mammoth.js → Markdown |
-| XLSX / XLS | Tables via SheetJS → Markdown tables |
-| CSV | Parsed to Markdown table |
-| PPTX / PPT | Slide text extraction |
-| HTML / HTM | Cleaned HTML → Markdown via Turndown |
-| PNG / JPG / WEBP | OCR via Tesseract.js (background delegation) |
-| TXT / MD | Pass-through |
-| JSON | Pretty-printed fenced code block |
+- **One‑click conversion** - drop a file, click **Convert**, get Markdown instantly.
+- **Auto‑convert** (optional) - start conversion automatically when a file is attached or pasted.
+- **Insert / Copy / Save** - insert generated Markdown into the chat input, copy to clipboard, or download as `.md`.
+- **History** - locally stored conversion history (never leaves your browser).
+- **OCR support** - images processed with Tesseract.js before Markdown conversion.
+- **Custom sites** - enable the conversion prompt on any website of your choice.
+- **Privacy‑first** - all conversion runs on local device. No data is sent to external servers.
 
 ---
+
+
 
 ## Installation
 
-### Prerequisites
+### 1. Chrome Web Store (Under review)
 
-- Node.js 18+ and npm
 
-### Build
+### 2. Manual (development / unpacked version)
 
 ```bash
-cd extension
+# Clone the repo (if you haven’t)
+git clone https://github.com/shibi1306/llm‑friendly‑extension.git
+cd llm‑friendly‑extension
 npm install
-npm run build  # Outputs to dist/
-npm run package  # Creates markitdown-chrome.zip
-```
-
-The built extension will be in the `dist/` folder.
-
-### Load in Chrome/Edge/Brave
-
-1. Open `chrome://extensions` (or `edge://extensions` for Edge)
-2. Enable **Developer mode** (top right)
-3. Click **Load unpacked**
-4. Select the `extension/dist/` folder
-
-### Load in Safari (macOS only)
-
-Safari requires converting the web extension to a native app wrapper:
-
-1. **Prerequisites:** Xcode 13+ installed
-2. **Convert the extension:**
-   ```bash
-   xcrun safari-web-extension-converter dist \
-     --app-name "LLM Friendly" \
-     --bundle-identifier com.markitdown.converter \
-     --macos-only
-   ```
-3. **Open the generated Xcode project** and build/run
-4. **Enable the extension** in Safari → Preferences → Extensions
-
-**Note:** Safari extensions require Apple Developer signing for public distribution.
-
-### Development (watch mode)
-
-```bash
-npm run dev  # Watches for changes and rebuilds
-```
-
-Changes rebuild automatically. Reload the extension in the browser after each rebuild.
-
----
-
-## Usage
-
-### On a chat site (ChatGPT, Claude, etc.)
-
-1. Click the paperclip / file attachment button as usual
-2. Select a supported file — the **LLM Friendly banner** appears
-3. Click **⚡ Convert** — conversion runs locally in your browser
-4. Choose an action:
-   - **📋 Copy** — copy the Markdown to clipboard
-   - **✏️ Insert** — inject Markdown directly into the chat input
-   - **💾 Save .md** — download the file to your configured folder
-
-### From the popup (any page)
-
-1. Click the **M↓** icon in your browser toolbar
-2. Drag-and-drop a file or click **browse**
-3. Use **Copy**, **Save**, or **Insert** buttons
-4. Past conversions appear in the **History** section
-
-### Settings
-
-Click **⚙️** in the popup (or right-click the extension icon → Options):
-
-- **Save Location** — set the subfolder name within your Downloads folder (default: `LLM Friendly`)
-- **Enabled Sites** — toggle which chat sites show the conversion prompt
-- **Auto-convert** — skip the prompt and convert automatically
-- **Clear History** — remove all stored conversions
-
----
-
-## Project Structure
-
-```
-extension/
-├── manifest.json          # Extension manifest (MV3, Chrome + Firefox)
-├── package.json
-├── webpack.config.js
-├── scripts/
-│   └── generate-icons.js  # Icon generator
-├── icons/                 # Extension icons (16, 48, 128 px)
-├── src/
-│   ├── background/
-│   │   └── background.js  # Service worker: storage, downloads, settings
-│   ├── content/
-│   │   ├── content.js     # File detection + conversion overlay
-│   │   └── content.css    # Overlay styles
-│   ├── converters/
-│   │   ├── index.js       # Dispatcher + image/JSON converters
-│   │   ├── pdf.js         # PDF via pdf.js
-│   │   ├── docx.js        # DOCX via mammoth + turndown
-│   │   ├── xlsx.js        # XLSX/CSV via SheetJS
-│   │   ├── html.js        # HTML via turndown
-│   │   ├── pptx.js        # PPTX via fflate + XML parsing
-│   │   └── text.js        # TXT/CSV/MD pass-through
-│   ├── popup/
-│   │   ├── popup.html
-│   │   ├── popup.js
-│   │   └── popup.css
-│   └── options/
-│       ├── options.html
-│       ├── options.js
-│       └── options.css
-└── dist/                  # Built output (load this folder as extension)
+npm run build          # produces ./dist
+# Load unpacked:
+#   Chrome/Edge/Brave → chrome://extensions → Enable “Developer mode” → Load unpacked → select ./dist
 ```
 
 ---
 
-## Chrome Web Store Publishing
+## How to Use
 
-1. Run `npm run build`
-2. Zip the `dist/` folder: `cd dist && zip -r ../markitdown-converter.zip .`
-3. Upload to the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
+1. Open a supported chat site.
+2. Attach a file via the paper‑clip / drag‑&‑drop zone or paste an image (Ctrl + V).
+3. A small card appears near the input:
+   - **Convert (✓)** - start conversion.
+   - **Skip (✕)** - discard and let the original paste/upload proceed.
+4. While converting, a spinner shows. When finished:
+   - **Copy (📋)** - copy Markdown to clipboard.
+   - **Insert (✏️)** - paste Markdown into the chat input.
+   - **Save (💾)** - download as `.md` (saved to `~/Downloads/LLM Friendly/` by default).
+5. Open the extension **Options** (via the popup ⚙️ or right‑click → Options) to:
+   - Change the download subfolder.
+   - Toggle auto‑convert.
+   - Manage enabled sites.
+   - View or clear history.
+   - Set history limit.
 
-> **Note**: Replace the SVG placeholder icons with proper PNGs before publishing.  
-> Install `npm install canvas` and re-run `npm run icons` to generate real PNGs.
+*Happy converting!* 
 
-## Firefox Add-ons (AMO)
+---
 
-Same zip, upload to [addons.mozilla.org](https://addons.mozilla.org/developers/).
+## Known Limitations
+
+| Issue | Description | Work‑around / Status |
+|-------|-------------|----------------------|
+| **Safari / Firefox builds** | No packaged `.xpi` or safari web‑extension yet. | See *Future Work* below. |
+| **Very large files** | Multi‑hundred‑MB PDFs/DOCX can take noticeable time. | Split files or accept modest delay. |
+| **Complex layouts** | Multi‑column tables, merged cells, or intricate formatting may lose layout. | Output focuses on readable text; manual tweaks may be needed. |
+| **OCR language** | Tesseract.js defaults to English; non‑English images may need language packs. | Future work - add language selector. |
+
+---
+
+## Future Work
+
+- **Safari & Firefox extensions** - adapt manifest and build scripts for those stores. publish to Mozilla Add‑ons and Apple App Store (via Safari Web Export).
+- **Deep OCR integration** - run OCR on images **inside** DOCX, XLSX, PPTX, and PDF before feeding extracted text to Markitdown, enabling searchable Markdown from scanned documents.
+- **User‑selectable OCR language** - expose Tesseract language packs in the Options page.
+- **Service‑worker robustness** - improve handling of extension updates and contextual invalidation to reduce “Extension context invalidated” errors.
+- **Automated tests** - add Jest/WebDriverCI tests for converters and UI.
+
+---
+
+## Acknowledgments
+
+- **[Markitdown](https://github.com/microsoft/markitdown)** - the original Python library that powers the Markdown conversion logic (ported to JavaScript for this extension).
+- **[Tesseract.js](https://github.com/naptha/tesseract.js)** - the OCR engine used to extract text from images.
+- **Additional libraries** - `pdf.js`, `mammoth`, `turndown`, `sheetjs`, `fflate`, `xlsx`, `webextension-polyfill`, etc.
 
 ---
 
 ## Privacy
+LLM Friendly is designed with privacy in mind. All file processing happens locally in your browser-none of your data is ever transmitted to external servers. For full details, see the [Privacy Policy](PRIVACY.md).
 
-- All file conversion happens **100% locally** in your browser
-- Converted Markdown is stored only in `chrome.storage.local` (your device only)
-- No analytics, no telemetry, no network requests
-- Files you convert are never sent anywhere
+
+## License
+
+This project is licensed under the MIT License. see the `LICENSE` file for details.
+

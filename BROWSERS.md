@@ -1,45 +1,46 @@
-# Cross-Browser Compatibility
+# Browser Compatibility
 
-This extension works identically on **Chrome** and **Safari** using a unified codebase.
+This extension is currently developed and tested for **Chrome** only. Safari support has not been tested or implemented yet.
 
-## Architecture
+## Architecture (Chrome-focused)
 
-### Polyfill Layer
+### API Layer
 - Uses `browser.*` API namespace (WebExtensions standard)
 - Chrome compatibility via lightweight polyfill in `src/polyfill.js`
-- Safari supports `browser.*` natively
+- **Note:** Safari support not yet tested
 
 ### Build System
-- **Webpack** builds distributions for the browser
+- **Webpack** builds distributions for Chrome/Chromium browsers
 - Chrome: `dist/` (manifest without any platform-specific fields)
-- Safari: Convert `dist/` using Xcode tools
+- **Note:** Safari build process not yet tested
 
-### Manifest Differences
+### Manifest
 - **Chrome/Edge/Brave:** Standard Manifest V3, no additional fields
-- **Safari:** Converted automatically by Xcode, uses same source as Chrome
+- **Note:** Safari manifest compatibility not yet tested
 
-## Browser-Specific Features
+## Browser-Specific Features (Chrome-focused)
 
 ### File System Access API (Folder Picker)
 The "Browse" button in settings uses the File System Access API:
 - ✅ **Chrome/Edge/Brave:** Fully supported
-- ⚠️ **Safari:** Limited support (requires user gesture)
 
 Fallback: Manual folder path input works on all browsers.
+- **Note:** Safari support not yet tested
 
 ### Content Script Injection
 Dynamic content script registration for custom websites:
 - ✅ **Chrome/Edge/Brave:** `chrome.scripting.registerContentScripts()` (MV3)
-- ✅ **Safari:** Same API with polyfill
+- **Note:** Safari support not yet tested
 
 ### Background Service Worker
 - **Chrome/Edge/Brave:** Service worker (MV3 standard)
-- **Safari:** Service worker with app wrapper
+- **Note:** Safari service worker implementation not yet tested
 
 ### PDF.js Worker
-- **Chrome/Edge/Brave/Safari:** Uses `pdf.worker.js` as a separate Web Worker.
+- **Chrome/Edge/Brave:** Uses `pdf.worker.js` as a separate Web Worker.
+- **Note:** Safari support not yet tested
 
-## Build Process
+## Build Process (Chrome-focused)
 
 ### Chrome/Chromium Browsers
 ```bash
@@ -49,7 +50,9 @@ npm run build:chrome
 ```
 
 ### Safari (macOS only)
+**Note:** Safari build process not yet tested
 ```bash
+# For future reference:
 npm run build:chrome  # Use Chrome build as base
 xcrun safari-web-extension-converter dist \
   --app-name "LLM Friendly" \
@@ -68,6 +71,7 @@ Then open the generated Xcode project and build.
 4. Load unpacked → select `dist/`
 
 ### Safari
+**Note:** Safari testing not yet performed
 1. Convert using `xcrun safari-web-extension-converter`
 2. Open generated `.xcodeproj`
 3. Build and run in Xcode
@@ -81,6 +85,7 @@ Then open the generated Xcode project and build.
 - Works for Chrome, Edge, Brave, and other Chromium browsers
 
 ### Safari App Store
+**Note:** Safari App Store submission not yet tested
 - Requires Apple Developer account ($99/year)
 - Must sign with Developer certificate
 - Submit via App Store Connect
@@ -89,11 +94,12 @@ Then open the generated Xcode project and build.
 ## Known Limitations
 
 ### Safari
+**Note:** Safari limitations not yet tested
 - **Requires Xcode for development:** Can't test without macOS and Xcode 13+
 - **App wrapper overhead:** Extension bundled in native macOS app (~1MB larger)
 - **Signing required for distribution:** Must be enrolled in Apple Developer Program
 
-### All Browsers
+### Chrome/Chromium Browsers
 - **Download folder restrictions:** Can only save to Downloads folder + subfolder (browser security)
 - **Content Security Policy:** Some chat sites may block extension scripts (rare)
 
@@ -123,9 +129,10 @@ Rebuilds on file changes. Reload extension in browser after rebuild.
 
 ### Debugging
 - **Chrome/Edge/Brave:** Right-click extension icon → Inspect popup / Inspect views: service worker
-- **Safari:** Safari → Develop → Web Extension Background Pages / Content → Show Console
+- **Note:** Safari debugging not yet tested
 
 ### Testing Across Browsers
+**Note:** Safari testing not yet performed
 1. Build version: `npm run build`
 2. Load `dist/` in Chrome
 3. Convert and load in Safari (if Xcode available)
@@ -133,10 +140,10 @@ Rebuilds on file changes. Reload extension in browser after rebuild.
 ## Source Code Notes
 
 ### Using browser.* API
-All source files use `browser.*` instead of `chrome.*`:
+All source files use `browser.*` instead of `chrome.*` to maintain potential future Safari compatibility:
 
 ```javascript
-// ✅ Correct (works everywhere)
+// ✅ Correct (works everywhere - designed for cross-browser)
 browser.runtime.sendMessage(...)
 browser.storage.local.get(...)
 
@@ -146,6 +153,7 @@ chrome.storage.local.get(...)
 ```
 
 The polyfill in `src/polyfill.js` maps `browser` to `chrome` on Chromium browsers automatically.
+**Note:** While the codebase is written with cross-browser compatibility in mind, Safari support has not yet been tested.
 
 ### Import Order
 Every entry point (`background.js`, `content.js`, `popup.js`, `options.js`) imports the polyfill first:
@@ -158,7 +166,7 @@ import { convertFile } from '../converters/index.js';
 ## Future Enhancements
 
 ### Potential Improvements
-- **Safari App Store submission:** Package ready for submission once Developer account is set up
+- **Safari support:** Implement and test Safari compatibility (future work)
 - **Chrome Web Store submission:** .zip package ready for Google review
 - **Automated testing:** Cross-browser tests using WebDriver
 - **CI/CD pipeline:** Auto-build and package on git push
