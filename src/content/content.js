@@ -23,6 +23,7 @@ const SITE_INPUT_SELECTORS = {
 
 const attachedInputs = new WeakSet();
 let convertedContent = null;
+let convertedFileName = null;
 let currentSiteEnabled = true;
 let autoConvertEnabled = false;
 let mutationObserver = null;
@@ -525,6 +526,7 @@ async function runConversion(file, card) {
   try {
     const md = await convertFile(file);
     convertedContent = md;
+    convertedFileName = file.name.replace(/\.[^.]+$/, '') + '.md';
 
     hide(card.querySelector('.mdit-loading'));
     show(card.querySelector('.mdit-result'), 'block');
@@ -569,14 +571,38 @@ function doCopy(card) {
   });
 }
 
-function doInsert(card) {
-  if (!convertedContent) return;
+/**
+ * Attach the converted markdown as a .md file by finding the page's
+ * file input element and programmatically setting the file on it.
+ * This works where synthetic ClipboardEvent paste fails (claude.ai
+ * and other sites that check event.isTrusted).
+ */
+function attachMdAsFile(content, fileName) {
+  const file = new File([content], fileName, { type: 'text/markdown' });
 
+  // Strategy 1: Find the page's file input and set the file programmatically
+  const fileInput = document.querySelector('input[type="file"]');
+  if (fileInput) {
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 'files'
+      ).set;
+      nativeSetter.call(fileInput, dt.files);
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      fileInput.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    } catch (e) {
+      // Fall through to paste approach
+    }
+  }
+
+  // Strategy 2: Dispatching a synthetic paste event (works on some sites
+  // that accept .md files via paste, like ChatGPT)
   const hostname = location.hostname;
   const selector = SITE_INPUT_SELECTORS[hostname] || '[contenteditable="true"], textarea';
 
-  // Prefer the currently focused element — the user was likely just typing
-  // in the chat input before clicking Insert.
   let input = document.activeElement;
   if (
     !input ||
@@ -586,86 +612,33 @@ function doInsert(card) {
     input = document.querySelector(selector);
   }
 
-  if (!input) {
-    // No known input found — copy to clipboard as fallback
-    fallbackToClipboard(card);
-    return;
-  }
+  if (!input) return false;
 
-  // If the matched element is inside a contenteditable (e.g. a <p> or <div>),
-  // use the top-level contenteditable ancestor as the target.
   if (!input.hasAttribute('contenteditable') && input.closest('[contenteditable]')) {
     input = input.closest('[contenteditable]');
   }
 
   input.focus();
-  // Small delay so the editor framework registers the focus
-  setTimeout(() => {
-    if (input.tagName === 'TEXTAREA') {
-      const s = input.selectionStart;
-      input.value = input.value.slice(0, s) + convertedContent + input.value.slice(input.selectionEnd);
-      input.selectionStart = input.selectionEnd = s + convertedContent.length;
-      fireInputEvent(input);
-      flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
-      return;
-    }
 
-    // ── Contenteditable ──────────────────────────────────────────
-    // 1) Copy to clipboard first so both execCommand and the paste
-    //    fallback have access to the data.
-    navigator.clipboard.writeText(convertedContent).then(() => {
-      // 2) Try execCommand('insertText') — generates a 'beforeinput'
-      //    event with inputType='insertText' that ProseMirror and
-      //    other editors listen to natively.
-      let inserted = false;
-      try {
-        inserted = document.execCommand('insertText', false, convertedContent);
-      } catch {
-        // execCommand threw — fall through to paste
-      }
-
-      if (inserted) {
-        fireInputEvent(input);
-        flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
-        return;
-      }
-
-      // 3) execCommand didn't take — dispatch a synthetic paste event.
-      //    Most editors (Slate, Draft.js, plain contenteditable) handle
-      //    paste events when the clipboard has the data.
-      try {
-        const dt = new DataTransfer();
-        dt.setData('text/plain', convertedContent);
-        const ev = new ClipboardEvent('paste', {
-          bubbles: true,
-          cancelable: true,
-          clipboardData: dt,
-        });
-        input.dispatchEvent(ev);
-        fireInputEvent(input);
-        flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
-      } catch {
-        // Everything failed — user can paste manually
-        flashBtn(card.querySelector('.mdit-insert'), '📋 Copied!', '✏️ Insert');
-      }
-    }).catch(() => {
-      // Clipboard write denied — try execCommand anyway (data-less)
-      try {
-        document.execCommand('insertText', false, convertedContent);
-        fireInputEvent(input);
-        flashBtn(card.querySelector('.mdit-insert'), '✅ Inserted!', '✏️ Insert');
-      } catch {
-        flashBtn(card.querySelector('.mdit-insert'), '📋 Copied!', '✏️ Insert');
-      }
-    });
-  }, 50);
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  const ev = new ClipboardEvent('paste', {
+    bubbles: true,
+    cancelable: true,
+    clipboardData: dt,
+  });
+  input.dispatchEvent(ev);
+  return true;
 }
 
-function fireInputEvent(el) {
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  // Also dispatch 'change' for textareas that may listen on it
-  if (el.tagName === 'TEXTAREA') {
-    el.dispatchEvent(new Event('change', { bubbles: true }));
+function doInsert(card) {
+  if (!convertedContent || !convertedFileName) return;
+
+  const ok = attachMdAsFile(convertedContent, convertedFileName);
+  if (!ok) {
+    fallbackToClipboard(card);
+  } else {
+    flashBtn(card.querySelector('.mdit-insert'), '✅ Attached!', '✏️ Insert');
   }
 }
 
@@ -728,6 +701,7 @@ function removeOverlay() {
     root.remove();
   }
   convertedContent = null;
+  convertedFileName = null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -818,22 +792,31 @@ async function getSettings() {
 // Handle INSERT_TEXT messages from the popup
 browser.runtime.onMessage.addListener((message) => {
   if (message.type === 'INSERT_TEXT' && message.text) {
-    const hostname = location.hostname;
-    const selector = SITE_INPUT_SELECTORS[hostname] || '[contenteditable="true"], textarea';
-    const input = document.querySelector(selector);
-    if (!input) {
-      navigator.clipboard.writeText(message.text);
-      return;
-    }
-    if (input.tagName === 'TEXTAREA') {
-      const s = input.selectionStart || input.value.length;
-      input.value = input.value.slice(0, s) + message.text + input.value.slice(input.selectionEnd || s);
-      input.selectionStart = input.selectionEnd = s + message.text.length;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+    if (message.fileName) {
+      // Attach as a .md file
+      const ok = attachMdAsFile(message.text, message.fileName);
+      if (!ok) {
+        navigator.clipboard.writeText(message.text);
+      }
     } else {
-      input.focus();
-      document.execCommand('insertText', false, message.text);
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      // Backward-compatible: insert text directly
+      const hostname = location.hostname;
+      const selector = SITE_INPUT_SELECTORS[hostname] || '[contenteditable="true"], textarea';
+      const input = document.querySelector(selector);
+      if (!input) {
+        navigator.clipboard.writeText(message.text);
+        return;
+      }
+      if (input.tagName === 'TEXTAREA') {
+        const s = input.selectionStart || input.value.length;
+        input.value = input.value.slice(0, s) + message.text + input.value.slice(input.selectionEnd || s);
+        input.selectionStart = input.selectionEnd = s + message.text.length;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        input.focus();
+        document.execCommand('insertText', false, message.text);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
   }
 });

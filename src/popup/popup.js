@@ -150,12 +150,12 @@ async function saveMd() {
 }
 
 async function insertMd() {
-  if (!currentMd) return;
+  if (!currentMd || !currentFileName) return;
   // Get the active tab and send a message to insert
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
-      await browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: currentMd });
+      await browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: currentMd, fileName: currentFileName });
     }
     flash('qInsertBtn', '✅ Sent!', '✏️ Insert');
   } catch (err) {
@@ -260,7 +260,7 @@ function buildHistItem(item) {
     try {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.id) {
-        await browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: item.markdown });
+        await browser.tabs.sendMessage(tab.id, { type: 'INSERT_TEXT', text: item.markdown, fileName: item.fileName });
         flash2(el.querySelector('.hist-insert'), '✅ Sent!', '✏️ Insert');
       }
     } catch {
