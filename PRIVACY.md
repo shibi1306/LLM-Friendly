@@ -2,8 +2,6 @@
 
 Last Updated: June 2026
 
-LLM Friendly converts documents to Markdown or text locally within the user's browser.
-
 ## Data Collection
 
 * The extension does not collect personal information.
