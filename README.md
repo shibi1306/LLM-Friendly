@@ -106,3 +106,6 @@ This project includes code derived from Microsoft's MarkItDown project
 (MIT License) and uses Tesseract.js/Tesseract OCR (Apache License 2.0).
 See THIRD_PARTY_NOTICES.md for details.
 
+## Source Code
+
+GitHub: https://github.com/shibi1306/LLM-Friendly
