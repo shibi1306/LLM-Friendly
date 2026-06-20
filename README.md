@@ -100,5 +100,9 @@ LLM Friendly is designed with privacy in mind. All file processing happens local
 
 ## License
 
-This project is licensed under the MIT License. see the `LICENSE` file for details.
+LLM Friendly is licensed under the MIT License.
+
+This project includes code derived from Microsoft's MarkItDown project
+(MIT License) and uses Tesseract.js/Tesseract OCR (Apache License 2.0).
+See THIRD_PARTY_NOTICES.md for details.
 
