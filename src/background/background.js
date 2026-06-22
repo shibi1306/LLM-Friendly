@@ -122,8 +122,7 @@ async function saveSettings(settings) {
   // Register/unregister content scripts for custom sites
   await registerCustomSites(settings.customSites || []);
 
-  // Notify all tabs about settings update (best-effort)
-  notifyAllTabs({ type: 'SETTINGS_UPDATED', settings }).catch(() => {});
+  // Settings changes picked up by content scripts via storage.onChanged
 
   // Enforce history limit
   const items = await storageGet(HISTORY_KEY, []);
@@ -160,26 +159,6 @@ async function registerCustomSites(customSites) {
     }
   } catch (err) {
     console.error('[LLM Friendly] Failed to register custom site scripts:', err);
-  }
-}
-
-// ── Tab notification (best-effort) ──────────────────────────────────────
-
-async function notifyAllTabs(message) {
-  let tabs;
-  try {
-    tabs = await browser.tabs.query({});
-  } catch {
-    return; // Tab API unavailable
-  }
-  const results = await Promise.allSettled(
-    tabs.map(tab =>
-      browser.tabs.sendMessage(tab.id, message).catch(() => {})
-    )
-  );
-  const failed = results.filter(r => r.status === 'rejected').length;
-  if (failed > 0) {
-    console.debug(`[LLM Friendly] ${failed} tabs not reachable for notification`);
   }
 }
 

@@ -58,11 +58,11 @@ async function init() {
   setupDragDetection();
   setupPasteDetection();
 
-  // Listen for settings updates from background
-  browser.runtime.onMessage.addListener((message) => {
-    if (message.type === 'SETTINGS_UPDATED') {
-      console.log('[LLM Friendly] Settings updated:', message.settings);
-      handleSettingsUpdate(message.settings);
+  // Listen for settings changes via storage (no tabs permission needed)
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.settings) {
+      console.log('[LLM Friendly] Settings updated via storage:', changes.settings.newValue);
+      handleSettingsUpdate(changes.settings.newValue);
     }
   });
 
