@@ -71,7 +71,7 @@ npm run build          # produces ./dist
 Click the extension icon in the toolbar to open the popup. Here you can drag‑or‑select a file to convert without needing a file input on the page, and browse your local conversion history. Each history item lets you **Copy**, **Insert**, or **Save** the previously converted Markdown.
 
 <p align="center">
-  <img src="screenshots/extension-popup.png" alt="Extension popup" width="300">
+  <img src="screenshots/extension-popup.png" alt="Extension popup" width="3`00">
 </p>
 
 ### Settings
