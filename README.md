@@ -45,23 +45,42 @@ npm run build          # produces ./dist
 
 ## How to Use
 
-1. Open a supported chat site.
-2. Attach a file via the paper‑clip / drag‑&‑drop zone or paste an image (Ctrl + V).
-3. A small card appears near the input:
-   - **Convert (✓)** - start conversion.
-   - **Skip (✕)** - discard and let the original paste/upload proceed.
-4. While converting, a spinner shows. When finished:
-   - **Copy (📋)** - copy Markdown to clipboard.
-   - **Insert (✏️)** - paste Markdown into the chat input.
-   - **Save (💾)** - download as `.md` (saved to `~/Downloads/LLM Friendly/` by default).
-5. Open the extension **Options** (via the popup ⚙️ or right‑click → Options) to:
-   - Change the download subfolder.
-   - Toggle auto‑convert.
-   - Manage enabled sites.
-   - View or clear history.
-   - Set history limit.
+### Document Conversion
 
-*Happy converting!* 
+1. Open a supported chat site and attach a file via the paper‑clip, drag‑&‑drop, or paste (Ctrl + V).
+
+![Step 1 — Conversion prompt](screenshots/step-1-convert-prompt.png)
+
+2. Click **Convert (✓)** to start conversion, or **Skip (✕)** to let the original file upload through. A spinner shows while the conversion runs.
+
+![Step 2 — Converting](screenshots/step-2-converting.png)
+
+3. Once complete, choose what to do with the Markdown:
+   - **Copy (📋)** — copy Markdown to clipboard.
+   - **Insert (✏️)** — attach the `.md` file into the chat input.
+   - **Save (💾)** — download as `.md` (saved to `~/Downloads/LLM Friendly/` by default).
+
+![Step 3 — Result](screenshots/step-3-result.png)
+
+### Extension Popup
+
+Click the extension icon in the toolbar to open the popup. Here you can drag‑or‑select a file to convert without needing a file input on the page, and browse your local conversion history. Each history item lets you **Copy**, **Insert**, or **Save** the previously converted Markdown.
+
+![Extension popup](screenshots/extension-popup.png)
+
+### Settings
+
+Open the extension **Options** (via the popup ⚙️ or right‑click → Options) to configure:
+
+- **Download folder** — pick a custom subfolder inside `~/Downloads/`.
+- **Auto‑convert** — skip the prompt and start conversion automatically.
+- **Custom sites** — enable the conversion prompt on any website of your choice.
+
+![Settings — General](screenshots/settings-1.png)
+
+You can also manage your conversion **history**, set the maximum number of items to keep, and clear the history from the settings page.
+
+![Settings — History](screenshots/settings-2.png) 
 
 ---
 
