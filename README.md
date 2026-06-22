@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="LLM_Friendly_Purple.png" alt="LLM Friendly Logo" width="400">
+</p>
+
 # LLM Friendly Browser Extension
 
 Convert PDF, DOCX, XLSX, PPTX, HTML, CSV, plain text, JSON and image files to Markdown directly inside AI‑chat websites.
@@ -66,7 +70,9 @@ npm run build          # produces ./dist
 
 Click the extension icon in the toolbar to open the popup. Here you can drag‑or‑select a file to convert without needing a file input on the page, and browse your local conversion history. Each history item lets you **Copy**, **Insert**, or **Save** the previously converted Markdown.
 
-![Extension popup](screenshots/extension-popup.png)
+<p align="center">
+  <img src="screenshots/extension-popup.png" alt="Extension popup" width="300">
+</p>
 
 ### Settings
 
