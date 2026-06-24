@@ -39,6 +39,19 @@ module.exports = (env, argv) => {
       new webpack.ProvidePlugin({
         global: [path.resolve(__dirname, 'src/global.js')],
       }),
+      // MV3 compliance: replace tesseract.js modules that contain remotely-hosted code.
+      // The patched versions remove:
+      //   - Blob + importScripts() dynamic worker creation
+      //   - CDN URL defaults for workerPath
+      //   - workerBlobURL: true default
+      new webpack.NormalModuleReplacementPlugin(
+        /tesseract\.js[\\/]src[\\/]worker[\\/]browser[\\/]spawnWorker/,
+        path.resolve(__dirname, 'src/patched-tesseract/spawnWorker.js')
+      ),
+      new webpack.NormalModuleReplacementPlugin(
+        /tesseract\.js[\\/]src[\\/]worker[\\/]browser[\\/]defaultOptions/,
+        path.resolve(__dirname, 'src/patched-tesseract/defaultOptions.js')
+      ),
       new MiniCssExtractPlugin({ filename: '[name].css' }),
       new CopyPlugin({
         patterns: [
@@ -72,12 +85,21 @@ module.exports = (env, argv) => {
             from: 'node_modules/tesseract.js/dist/worker.min.js',
             to: 'tesseract-worker.min.js',
             transform: (content) => {
-              return content.toString().replace(/new Function\(['"]return this['"]\)\(\)/g, 'globalThis');
+              let src = content.toString();
+              // Fix CSP-unsafe Function constructor pattern
+              src = src.replace(/new Function\(['"]return this['"]\)\(\)/g, 'globalThis');
+              // Strip CDN URLs — MV3 extensions must not reference remotely hosted code
+              src = src.replace(/https?:\/\/cdn\.jsdelivr\.net[^\s"']*/g, '');
+              return src;
             }
           },
           {
             from: 'node_modules/tesseract.js-core/tesseract-core.wasm.js',
             to: 'tesseract-core.wasm.js',
+          },
+          {
+            from: 'eng.traineddata',
+            to: 'traineddata/eng.traineddata',
           },
         ],
       }),
@@ -87,6 +109,11 @@ module.exports = (env, argv) => {
       splitChunks: false,
     },
     resolve: {
+      alias: {
+        // Patched constants — used by our patched defaultOptions.js via a
+        // module-level require('tesseract.js/src/constants/defaultOptions')
+        'tesseract.js/src/constants/defaultOptions': path.resolve(__dirname, 'src/patched-tesseract/constantsDefaultOptions.js'),
+      },
       fallback: {
         url: false,
         path: false,

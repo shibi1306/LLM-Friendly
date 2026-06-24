@@ -27,6 +27,8 @@ async function handleOCR({ dataUrl, fileName }) {
   const worker = await Tesseract.createWorker('eng', 1, {
     workerPath: browser.runtime.getURL('tesseract-worker.min.js'),
     corePath: browser.runtime.getURL('tesseract-core.wasm.js'),
+    langPath: browser.runtime.getURL('traineddata/'),
+    gzip: false,
     workerBlobURL: false,
     logger: m => {
       if (m.status === 'recognizing text') {
