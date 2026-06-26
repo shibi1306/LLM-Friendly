@@ -36,7 +36,7 @@ Install the extension directly from the Chrome Web Store:
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-LLM_Friendly-8A2BE2?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/pnjgalpphjobibhdnfgehdbjoblbbbfa?utm_source=item-share-cb)
 
-👉 **[LLM Friendly on the Chrome Web Store](https://chromewebstore.google.com/detail/pnjgalpphjobibhdnfgehdbjoblbbbfa?utm_source=item-share-cb)**
+**[LLM Friendly on the Chrome Web Store](https://chromewebstore.google.com/detail/pnjgalpphjobibhdnfgehdbjoblbbbfa?utm_source=item-share-cb)**
 
 **To pin the extension to your toolbar:**
 1. Click the **puzzle piece** (Extensions) icon in the Chrome toolbar.
