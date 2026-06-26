@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/Social%20media%20preview.png" alt="LLM Friendly Logo" width="500">
+  <img src="images/Social%20media%20preview.png" alt="LLM Friendly Logo" width="1000">
 </p>
 
 # LLM Friendly Browser Extension
